@@ -1,0 +1,321 @@
+---
+title: "2024 mass coral bleaching event: methods"
+author: "George Roff"
+date: "2024-03-29"
+output:
+  html_document:
+    theme: spacelab
+    highlight: textmate
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    code_folding: hide
+---
+
+Below is an intiial analysis of the DHW from the 2024 mass coral bleaching event on the Great Barrier Reef.
+
+#### i) Great Barrier Reef shp file
+
+First, load the GBRMPA shp files for the Great Barrier Reef. For reproducibility the files are downloadable from [Bozec et al 2022](https://zenodo.org/records/5146061/preview/ymbozec/REEFMOD.6.4_GBR_HINDCAST_ANALYSES-v1.0.0.zip), and may differ from the official GBRMPA files available from the GBRMPA [geoportal](https://www2.gbrmpa.gov.au/geoportal/catalog/download/download.page).
+
+```{r, fig.width=7, fig.height=5, warning=FALSE, message=FALSE}
+
+
+library(httr)
+library(tidyverse)
+library(janitor)
+library(sf)
+library(stars)
+library(raster)
+library(exactextractr)
+library(tmap)
+library(kableExtra)
+library(reactable)
+library(ggplot2)
+library(terra)
+library(tidyterra)
+
+# write a function to get GBR shape file boundaries from eAtlas
+get_gbr_shape <- function(crs="EPSG:20353", source="file"){
+
+  if (source=="url"){
+    #download from eAtlas
+    url <- "https://nextcloud.eatlas.org.au/s/xQ8neGxxCbgWGSd/download/TS_AIMS_NESP_Torres_Strait_Features_V1b_with_GBR_Features.zip"
+    destfile <- "TS_AIMS_NESP_Torres_Strait_Features_V1b_with_GBR_Features.zip"
+    GET(url, write_disk(destfile, overwrite = TRUE))
+    if (!dir.exists("unzipped_files")) {
+      dir.create("unzipped_files")
+    }
+    unzip("TS_AIMS_NESP_Torres_Strait_Features_V1b_with_GBR_Features.zip", exdir = "unzipped_files")
+    shapefile_path <- "unzipped_files/TS_AIMS_NESP_Torres_Strait_Features_V1b_with_GBR_Features.shp"
+    
+    gbr_shape <- st_read(shapefile_path, quiet=TRUE) %>%
+      mutate(longitude = st_drop_geometry(.)$X_COORD,
+             latitude = st_drop_geometry(.)$Y_COORD) |>
+      filter(FEAT_NAME=="Reef") |>
+      st_set_crs(4283) |>
+      st_transform(20353) |>
+      st_make_valid() |> 
+      clean_names() |> 
+      dplyr::select(loc_name_s, qld_name, gbr_name, label_id, geometry, longitude, latitude) |> 
+      mutate(gbr_name = as.factor(gbr_name)) |> 
+      mutate(label_id = as.factor(label_id))
+      
+    zones <- read.csv("/Users/rof011/GBR-coral-bleaching/data/gbr_zones.csv")
+  
+    gbr_shape_output <- left_join(gbr_shape, zones, by="label_id")
+  
+    return(gbr_shape)
+    
+  } else if (source=="file"){
+   #read from disk
+   shapefile_path <- "/Users/rof011/GBR-coral-bleaching/data/Great_Barrier_Reef_Features.shp"
+  
+    gbr_shape <- st_read(shapefile_path, quiet=TRUE) %>%
+      mutate(longitude = st_drop_geometry(.)$X_COORD,
+             latitude = st_drop_geometry(.)$Y_COORD) |>
+      filter(FEAT_NAME=="Reef") |>
+      st_set_crs(4283) |>
+      st_transform(20353) |>
+      st_make_valid() |> 
+      clean_names() |> 
+      dplyr::select(loc_name_s, qld_name, gbr_name, label_id, geometry, longitude, latitude, 
+             area_ha) |> 
+      mutate(gbr_name = as.factor(gbr_name)) |> 
+      mutate(label_id = as.factor(label_id))
+      
+    zones <- read.csv("/Users/rof011/GBR-coral-bleaching/data/gbr_zones.csv")
+  
+    gbr_shape_output <- left_join(gbr_shape, zones, by="label_id")
+  
+    return(gbr_shape)
+  }
+
+}
+
+
+### note that sf throws topology errors:
+# Error in scan(text = lst[[length(lst)]], quiet = TRUE) : 
+#   scan() expected 'a real', got 'TopologyException:'
+# Error in (function (msg)  : 
+#   TopologyException: CoverageUnion cannot process incorrectly noded inputs.
+  
+
+gbr_shape <- get_gbr_shape(source="file") |> 
+  mutate(id=sub("([a-zA-Z])$", "", label_id)) |> # drop multi-named sub-reef ID
+  group_by(gbr_name, id) |> 
+  summarise() |> 
+  st_make_valid() 
+
+# get distinct label_ID for each reef without sub-headings
+# complex as some reefs (e.g. U/N) are catch-all "unknown reefs"
+gbr_shape_label_ID <- get_gbr_shape() |> 
+  as_tibble() |> 
+  mutate(gbr_name=as.factor(gbr_name)) |> 
+  mutate(id=sub("([a-zA-Z])$", "", label_id)) |> 
+  dplyr::select(gbr_name, id) |>
+  distinct(gbr_name,id)
+
+### this approach seems to give the same approx reef area as the raw data:
+gbr_shape_raw <- get_gbr_shape() 
+# gbr_shape |> st_area() |> sum()      # 28560112188 [m^2]
+# gbr_shape_raw |> st_area() |> sum()  # 28560118763 [m^2]
+
+ 
+  
+head(gbr_shape) |> kable("html") %>% 
+  kable_styling("striped", font_size=11) %>% 
+  scroll_box(width = "100%")
+
+```
+
+There are 3724 reefs, with seperate polygons for each reef label identifier (e.g. U/N Reef has 09-361a through to 09-361f). Individual polygons per reef ID were merged with `sf::union` to form multipolygons (see example for U/N 20-299 reef which has 9 separate label_id components).
+
+```{r, fig.width=7, fig.height=5, warning=FALSE, message=FALSE}
+
+tmap_mode("plot")
+
+a <- tm_shape(gbr_shape_raw |> filter(grepl("20-299", label_id))) + 
+  tm_polygons("loc_name_s", legend.show=FALSE) + 
+  tm_graticules() +
+  tm_layout(main.title="U/N Reef (20-299) ", main.title.position = "center", main.title.size = 1) + 
+  tmap_options(max.categories = 57) 
+
+b <- tm_shape(gbr_shape  |> filter(grepl("20-299", id))) +
+  tm_polygons("aquamarine4", alpha=0.2) +
+  tm_layout(main.title="U/N Reef (20-299) merged", main.title.position = "center", main.title.size = 1) + 
+   tm_graticules()
+
+tmap_arrange(a,b, ncol=2)
+
+```
+
+#### ii) NOAA CRW DHW data
+
+The NOAA Coral Reef Watch (CRW) daily global 5km satellite coral bleaching Degree Heating Week (DHW) is a metric that shows accumulated heat stress.
+
+*"There is a risk of coral bleaching when the DHW value reaches 4 °C-weeks. By the time the DHW value reaches 8 °C-weeks, reef-wide coral bleaching with mortality of heat-sensitive corals is likely. If the accumulated heat stress continues to build further and exceeds a DHW value of 12 °C-weeks, multi-species mortality becomes likely"*
+
+The data is available from 01/04/1984 to present day (with a \~2 day lag for processing). Data was extracted for cells within the GBR boundaries as determined by the boundary box (plus a 1km buffer) from the GBR shape file above. DHW were extracted for all 38 years (1985-2023) between 1st January to 1st July, on the assumption that the maximum heatstress would have passed by Austral winter (01/07) in each year. For each gridcell in each year the maximum DHW value was extracted to compare the DHW among years. DHW for 2024 were extracted seperately due to an incomplete timeseries at the time of analysis:
+
+*Note: each year of data is \~480mb in size, so total download size is \~15gb and may take some time*
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+
+gbr_shape_bbox <- gbr_shape |> st_transform(4326) |> st_bbox()
+gbr_shape_bbox <- gbr_shape |> st_transform(4326) |> st_bbox() |> st_as_sfc() |> st_buffer(1) |> st_bbox()
+
+# custom function for DHW conversion to spatraster 
+# (there are better functions to download erdapp data but this works)
+get_dhw_gbr <- function(timestart, timeend, timeout=60, crs="EPSG:20353"){
+  gbr_dhw_url <- paste0(
+    "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.csv?", "CRW_DHW", "%5B(", timestart,
+    "T12:00:00Z):1:(", timeend, "T12:00:00Z)%5D%5B(",
+   -24.86075, "):1:(", -10.27304, ")%5D%5B(",
+   141.9369 , "):1:(", 153.2032 ,
+    ")%5D"
+  )
+  temp_file <- tempfile(fileext = ".csv")
+  GET(url = gbr_dhw_url, write_disk(temp_file, overwrite = TRUE), timeout(timeout))
+  csvdata <- read.csv(temp_file, header = TRUE, skip=1)
+  write_csv(csvdata, paste0("dhw_", start_date, "_raw.csv")) 
+  print(paste0("Downloading ", start_date, " - ", end_date))
+  csvdata <- csvdata |>
+    dplyr::select(2,3,4) |>
+    dplyr::group_by(degrees_east, degrees_north) |>
+    summarise(dhw = max(Celsius.weeks)) 
+  gbr_dhw <- tidyterra::as_spatraster(csvdata, crs="EPSG:4326") |> project("EPSG:20353")
+  return(gbr_dhw)
+}
+
+# Loop the function across years from 1981 to 2023
+
+gbr_dhw_data <- list()
+
+for(year in 1985:2023) {
+
+  start_date <- paste0(year, "-01-01") # Define start and end dates for the given year
+  end_date <- paste0(year, "-07-01")
+  dhw_data <- tryCatch({  # Fetch the DHW data for the GBR
+    get_dhw_gbr(start_date, end_date, timeout=500)
+  }, error = function(e) { #Use tryCatch to handle  errors or timeouts
+    message(paste("Error fetching data for year", year, ":", e$message))
+    NULL # Return NULL if there was an error
+  })
+
+  gbr_dhw_data[[as.character(year)]] <- dhw_data #Store the list using the year as the name
+  
+}
+
+# Ammend 2024 data
+
+for(year in 2024) {
+
+  start_date <- paste0(year, "-01-01") # Define start and end dates for the given year
+  end_date <- paste0(year, "-07-01")
+  dhw_data <- tryCatch({  # Fetch the DHW data for the GBR
+    get_dhw_gbr(start_date, end_date, timeout=500)
+  }, error = function(e) { #Use tryCatch to handle  errors or timeouts
+    message(paste("Error fetching data for year", year, ":", e$message))
+    NULL # Return NULL if there was an error
+  })
+
+  gbr_dhw_data[[as.character(year)]] <- dhw_data #Store the list using the year as the name
+  
+}
+
+
+# function borrowed from FAMEFMR::saveSpatRasterList:
+gbr_dhw_data_list<-rapply(gbr_dhw_data_list,f=terra::wrap, classes = "SpatRaster",how="replace")
+qs::qsave(gbr_dhw_data_list,"gbr_dhw_data.RData")
+  
+
+```
+
+#### iii) Spatial stats
+
+As DHW is automatically calculated each day in the NOAA dataset, the years in max DHW refer to the year of bleaching (e.g. 2016 = cumulative heatstress from the end of 2015 and the start of 2016). For each reef multipolygon in the `gbr_shape` dataset, the maximum DHW in each year was calculated using an area-weighted approach due to (`exactextractr::exact_extract` was used over `stars::st_extract` \| `vect::extract` \| `raster::extract` due to [performance issues](https://gis.stackexchange.com/questions/393763/extract-in-r-raster-package-incredibly-slow)]).
+
+The `exact_extract` approach used below is conservative in that for larger reef polygons (or multipolyons), it calculates the `mean` value of cells that intersect the polygon weighted by the fraction of the cell that is covered (as opposed to the `max` value). Other metrics such as `variance` and `coefficient_of_variation` may be of interest. Undefined (NA) values are ignored in all of the named summary operations when they occur in the value raster. When they occur in the weighting raster, they cause the result of the summary operation to be NA.
+
+```{r, message=FALSE, warning=FALSE, cache=TRUE}
+
+library(reactable)
+
+gbr_shape_dhw_list <- qs::qread("/Users/rof011/GBR-coral-bleaching/data/gbr_dhw_data.RData")
+gbr_shape_dhw_list <- lapply(gbr_shape_dhw_list, function(x) terra::unwrap(x))
+gbr_shape_dhw_list <- terra::rast(gbr_shape_dhw_list)
+names(gbr_shape_dhw_list) <- paste0("year_", seq(1986,2024,1))
+
+year_list <- paste0("year_", seq(1986,2024,1))
+gbr_shape_dhw <- gbr_shape
+
+for (i in year_list) {
+  year_col_name <- paste("dhw_max", sub("^.*_", "", i), sep="_")
+  gbr_shape_dhw[[year_col_name]] <- exact_extract(gbr_shape_dhw_list[[i]], progress = FALSE,
+                                                  gbr_shape_dhw, fun = "mean", weights = "area")
+}
+
+
+head(gbr_shape_dhw) |> 
+  kable("html") |>  
+  kable_styling("striped", font_size=11) |>  
+  scroll_box(width = "100%")
+
+saveRDS(gbr_shape_dhw, "/Users/rof011/GBR-coral-bleaching/data/gbr_shape_dhw.RDS")
+
+```
+
+The output is an `sfc` of polygons for each reef with max DHW for each year from 1984:2016 (see below example of the max DHW experienced at Heron Island vs Lizard Island in 2016).
+
+### 1) Individual reef timeseries
+
+The DHW dataset can be filtered to quantify the trajectories of individual reefs through time (for example Heron Island in the southern GBR and Lizard Island in the northern GBR):
+
+```{r, fig.width=7, fig.height=5, warning=FALSE, message=FALSE}
+
+tmap_mode("plot")
+
+a <- tm_shape(gbr_shape_dhw |> filter(grepl("Lizard", gbr_name)) |> mutate(dhw_max_2016=as.numeric(dhw_max_2016)) ) + 
+  tm_polygons(col="dhw_max_2016", palette="-RdBu", breaks= seq(1:10), alpha=0.8, legend.show=FALSE) + 
+  tm_layout(main.title="Lizard Island (2016)", main.title.position = "center", main.title.size = 1) +
+  tm_graticules(lwd=0.2)
+
+
+b <- tm_shape(gbr_shape_dhw |> filter(gbr_name=="Heron Reef") |> mutate(dhw_max_2016=as.numeric(dhw_max_2016))) + 
+  tm_polygons(col="dhw_max_2016", palette="-RdBu", breaks= seq(1:10), alpha=0.8) +
+  tm_layout(main.title="Heron Reef (2016)", main.title.position = "center", main.title.size = 1) + 
+  tm_graticules(lwd=0.2)
+
+tmap_arrange(b,a, ncol=2)
+
+```
+
+As the dataset is in `sf` format, the output for each year can be plotted spatially to compare the maximum DHW for adjacent reefs, for example Heron Reef and Lizard Reef (Lizard Reef is composed of multiple polygons based on label_ID) where the within-reef trajectories are fit with a simple GAM model:
+
+```{r, fig.width=7, fig.height=3.5, warning=FALSE, message=FALSE}
+
+dhw_subset <- gbr_shape_dhw |> 
+  filter(gbr_name=="Lizard Island Reef (North East)" | gbr_name=="Heron Reef") |>
+  as.data.frame() |> 
+  dplyr::select(-id, -geometry) |> 
+  pivot_longer(-gbr_name, names_to="year", values_to="dhw") |> 
+  mutate(year = as.numeric(str_extract_all(year, "\\d+"))) |> 
+  arrange(gbr_name, year) 
+
+ggplot() + theme_bw() + facet_wrap(~gbr_name, ncol=2) +
+  geom_smooth(data=dhw_subset, aes(x=year, y=dhw, color=gbr_name), 
+              method = "gam", formula = y ~ s(x, bs = "cr", k = 10), show.legend = FALSE) +
+  geom_line(data=dhw_subset, aes(x=year, y=dhw, color=gbr_name), show.legend=FALSE) +
+  geom_point(data=dhw_subset, aes(year, dhw, fill=gbr_name), shape=21, size=2, show.legend=FALSE) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  scale_fill_manual(values=c("aquamarine2", "coral2")) +
+  scale_color_manual(values=c("aquamarine4", "coral4"))
+  
+
+
+
+```
+
+

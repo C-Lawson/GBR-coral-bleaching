@@ -1,0 +1,136 @@
+---
+title: "Temporal trends in DHW"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+runtime: shiny
+
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+
+
+gbr_shape_dhw <- readRDS("/Users/rof011/GBR-coral-bleaching/data/gbr_shape_dhw.RDS")
+
+
+df <- gbr_shape_dhw |>
+  as.data.frame() |>
+  dplyr::select(-id, -geometry) |>
+  pivot_longer(-gbr_name, names_to="year", values_to="dhw_max") |>
+  mutate(year = as.numeric(str_extract_all(year, "\\d+"))) |>
+  arrange(gbr_name, year)
+
+```
+
+<!-- ----------------------------------------------------------------------- -->
+
+<!-- ```{r, echo=FALSE, warning=FALSE, message=FALSE} -->
+
+<!-- selectInput("gbr_name", "Select reef name:", choices = unique(df$gbr_name), selected = unique(df$gbr_name)[1]) -->
+
+
+
+<!-- ``` -->
+
+
+<!-- ```{r, echo=FALSE, warning=FALSE, message=FALSE} -->
+<!-- renderPlotly({ -->
+<!--   input$gbr_name # This line ensures reactivity based on dropdown selection -->
+
+<!--   plot <- ggplot(df[df$gbr_name == input$gbr_name, ], aes(x = year, y = dhw_max)) + -->
+<!--     theme_bw() + -->
+<!--     labs(title = paste("Long-term trends in annual maximum DHW for ", input$gbr_name), -->
+<!--          x = "Year", y = "Maximum DHW") +  -->
+<!--     theme(plot.title = element_text(size=9)) -->
+
+<!--   # Conditionally add plot components based on input selections -->
+<!--   if(input$show_line) { -->
+<!--     plot <- plot + geom_line(show.legend=FALSE) -->
+<!--   } -->
+<!--   if(input$show_points) { -->
+<!--     plot <- plot + geom_point(shape=21, size=2, show.legend=FALSE) -->
+<!--   } -->
+<!--   if(input$show_trajectory) { -->
+<!--     error_option <- ifelse(input$show_error, TRUE, FALSE) -->
+<!--     plot <- plot + geom_smooth(method = "gam", formula = y ~ s(x, bs = "cr", k = 10), se = error_option, show.legend = FALSE) -->
+<!--   } -->
+
+<!--   ggplotly(plot) -->
+<!-- }) -->
+<!-- ``` -->
+
+
+
+<!-- ```{r, echo=FALSE, warning=FALSE, message=FALSE} -->
+
+<!-- checkboxInput("show_line", "Show lines", TRUE) -->
+<!-- checkboxInput("show_points", "Show annual points", TRUE) -->
+<!-- checkboxInput("show_trajectory", "Show trajectory (GAM fit)", TRUE) -->
+<!-- checkboxInput("show_error", "Show trajectory error (GAM fit)", TRUE) -->
+
+
+<!-- ``` -->
+
+
+-----------------------------------------------------------------------
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+selectInput("gbr_name", "Select reef(s):", choices = unique(df$gbr_name), selected = c("Heron Reef"), multiple = TRUE)
+
+
+
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+renderPlotly({
+  # Filter df for selected gbr_names
+  selected_data <- df %>% filter(gbr_name %in% input$gbr_name)
+  
+  plot <- ggplot(selected_data, aes(x = year, y = dhw_max, color = gbr_name, fill=gbr_name, group = gbr_name)) +
+    theme_bw() +
+    labs(title = "Long-term trends in annual maximum DHW",
+         subtitle = paste("for", paste(input$gbr_name, collapse = ", ")),
+         x = "Year", y = "Maximum DHW") +
+    theme(plot.title = element_text(size=9), plot.subtitle = element_text(size=8), legend.position="none") 
+  
+  # Conditionally add plot components based on input selections
+  if(input$show_line) {
+    plot <- plot + geom_line(show.legend=FALSE)
+  }
+  if(input$show_points) {
+    plot <- plot + geom_point(shape=21, color="black", size=2, show.legend=FALSE)
+  }
+  if(input$show_trajectory) {
+    error_option <- ifelse(input$show_error, TRUE, FALSE)
+    plot <- plot + geom_smooth(method = "gam", formula = y ~ s(x, bs = "cr", k = 10), se = error_option, show.legend = FALSE)
+  }
+  
+  ggplotly(plot)
+})
+
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+checkboxInput("show_line", "Show lines", TRUE)
+checkboxInput("show_points", "Show annual points", TRUE)
+checkboxInput("show_trajectory", "Show trajectory (GAM fit)", TRUE)
+checkboxInput("show_error", "Show trajectory error (GAM fit)", TRUE)
+
+
+```

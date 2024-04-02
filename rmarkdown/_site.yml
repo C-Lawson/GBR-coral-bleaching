@@ -1,0 +1,45 @@
+name: "Mass Coral Bleaching on the Great Barrier Reef"
+output_dir: "_site"
+navbar:
+  title: "GBR bleaching analysis"
+  type: default
+  left:
+    - text: "Home"
+      href: index.html
+      icon: fa-home
+    - text: "Methods"
+      href: methods.html
+      icon: fa-gear
+    - text: "DHW analysis"
+      icon: fa-bar-chart
+      menu:
+        - text: "GBR-wide trajectories (1986:2024)"
+          href: timeseries.html
+        - text: "Spatial patterns of the 2024 event"
+          href: spatial-patterns.html
+        - text: "Spatial patterns of mass bleaching events"
+          href: spatial-patterns2.html
+    - text: "DHW time-series"
+      icon: fa-line-chart
+      menu:
+        - text: "Reef-scale time-series"
+          href: reef-level-trajectories2.html
+        - text: "Reef-scale trajectories"
+          href: reef-level-trajectories2.html
+    - text: "Spatial maps"
+      href: bleaching-maps.html
+      icon: fa-globe
+    - text: "GitHub"
+      icon: fa-github
+      href: https://github.com/marine-ecologist/
+output:
+  html_document:
+    theme: spacelab
+    highlight: textmate
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    code_folding: hide
+    css: bleaching.css
+    fig_caption: true
