@@ -1,0 +1,25 @@
+---
+title: "GBR-wide trends in yearly maximum DHW (1986:2024)"
+author: "George Roff"
+date: "2024-03-29"
+output:
+  html_document:
+    theme: spacelab
+    highlight: textmate
+    toc: false
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    code_folding: hide
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Loading...
+via [https://marine-ecologist.shinyapps.io/DHWtimeseries/]("https://marine-ecologist.shinyapps.io/DHWtimeseries/") 
+<iframe src="https://marine-ecologist.shinyapps.io/DHWtimeseries/" height="1000px" width="100%" scrolling="yes" style="border:0;"></iframe>
+
+

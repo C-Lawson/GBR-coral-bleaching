@@ -128,6 +128,11 @@ head(gbr_shape) |> kable("html") %>%
   kable_styling("striped", font_size=11) %>% 
   scroll_box(width = "100%")
 
+
+### note. 99 reefs
+
+tm_shape(gbr_shape |> filter(str_detect(id, "99"))) + tm_fill("red") 
+
 ```
 
 There are 3724 reefs, with seperate polygons for each reef label identifier (e.g. U/N Reef has 09-361a through to 09-361f). Individual polygons per reef ID were merged with `sf::union` to form multipolygons (see example for U/N 20-299 reef which has 9 separate label_id components).
@@ -155,9 +160,15 @@ tmap_arrange(a,b, ncol=2)
 
 The NOAA Coral Reef Watch (CRW) daily global 5km satellite coral bleaching Degree Heating Week (DHW) is a metric that shows accumulated heat stress.
 
-*"There is a risk of coral bleaching when the DHW value reaches 4 °C-weeks. By the time the DHW value reaches 8 °C-weeks, reef-wide coral bleaching with mortality of heat-sensitive corals is likely. If the accumulated heat stress continues to build further and exceeds a DHW value of 12 °C-weeks, multi-species mortality becomes likely"*
+-   *"There is a risk of coral bleaching when the DHW value reaches 4 °C-weeks. By the time the DHW value reaches 8 °C-weeks, reef-wide coral bleaching with mortality of heat-sensitive corals is likely. If the accumulated heat stress continues to build further and exceeds a DHW value of 12 °C-weeks, multi-species mortality becomes likely"*
 
-The data is available from 01/04/1984 to present day (with a \~2 day lag for processing). Data was extracted for cells within the GBR boundaries as determined by the boundary box (plus a 1km buffer) from the GBR shape file above. DHW were extracted for all 38 years (1985-2023) between 1st January to 1st July, on the assumption that the maximum heatstress would have passed by Austral winter (01/07) in each year. For each gridcell in each year the maximum DHW value was extracted to compare the DHW among years. DHW for 2024 were extracted seperately due to an incomplete timeseries at the time of analysis:
+The data is available from 01/04/1984 to present day (with a \~2 day lag for processing). Data was extracted for cells within the GBR boundaries as determined by the boundary box (plus a 1km buffer) from the GBR shape file above. Daily DHW were extracted for all 38 years (1985-2023) between 1st January to 1st July, on the assumption that the maximum heatstress would have passed by Austral winter (01/07) in each year.
+
+For each gridcell, the maximum DHW value per year ("yearly maximum DHW", Van Hooidonk & Huber 2009) was extracted for each year (1986:2024). DHW for 2024 were extracted separately due to an incomplete timeseries at the time of analysis. The approaches to calculating DHW on the GBR differ among studies, for example:
+
+-   "*For 1998, 2002 and 2020, we used the maximum DHW for each year because bleaching was recorded after the peak. In 2016 and 2017, when bleaching was recorded prior to the maximum DHW for those years, we used the accumulated DHW on the date when bleaching was observed"* - Hughes et al. (2020) Current Biology
+
+Further analysis on the distribution/shape of DHW will inform how the 2024 event compares to previous in terms of thermal profiles, but for an initial analysis on DHW the simple approach here uses yearly maximum DHW.
 
 *Note: each year of data is \~480mb in size, so total download size is \~15gb and may take some time*
 
@@ -167,7 +178,7 @@ gbr_shape_bbox <- gbr_shape |> st_transform(4326) |> st_bbox()
 gbr_shape_bbox <- gbr_shape |> st_transform(4326) |> st_bbox() |> st_as_sfc() |> st_buffer(1) |> st_bbox()
 
 # custom function for DHW conversion to spatraster 
-# (there are better functions to download erdapp data but this works)
+# (there are better functions to download erdapp data e.g. rerddap::griddap but this works for spatraster conversion ofyearly maximum DHW per polygon)
 get_dhw_gbr <- function(timestart, timeend, timeout=60, crs="EPSG:20353"){
   gbr_dhw_url <- paste0(
     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.csv?", "CRW_DHW", "%5B(", timestart,
@@ -233,11 +244,11 @@ qs::qsave(gbr_dhw_data_list,"gbr_dhw_data.RData")
 
 ```
 
-#### iii) Spatial stats
+#### iii) Spatial tools
 
-As DHW is automatically calculated each day in the NOAA dataset, the years in max DHW refer to the year of bleaching (e.g. 2016 = cumulative heatstress from the end of 2015 and the start of 2016). For each reef multipolygon in the `gbr_shape` dataset, the maximum DHW in each year was calculated using an area-weighted approach due to (`exactextractr::exact_extract` was used over `stars::st_extract` \| `vect::extract` \| `raster::extract` due to [performance issues](https://gis.stackexchange.com/questions/393763/extract-in-r-raster-package-incredibly-slow)]).
+As DHW is automatically calculated each day in the NOAA dataset, the years in max DHW refer to the year of bleaching (e.g. 2016 = cumulative heatstress from the end of 2015 and the start of 2016). For each reef multipolygon in the `gbr_shape` dataset, the mean yearly maximum DHW in each year was calculated using an area-weighted approach. `exactextractr::exact_extract` was used over `stars::st_extract`, `vect::extract`, and `raster::extract` due to [performance issues](https://gis.stackexchange.com/questions/393763/extract-in-r-raster-package-incredibly-slow) with `stars`/`terra`/`rast`.
 
-The `exact_extract` approach used below is conservative in that for larger reef polygons (or multipolyons), it calculates the `mean` value of cells that intersect the polygon weighted by the fraction of the cell that is covered (as opposed to the `max` value). Other metrics such as `variance` and `coefficient_of_variation` may be of interest. Undefined (NA) values are ignored in all of the named summary operations when they occur in the value raster. When they occur in the weighting raster, they cause the result of the summary operation to be NA.
+The `exact_extract` approach used below is conservative in that for larger reef polygons (or multipolygons) the function calculates the `mean` value of cells that intersect the polygon, weighted by the fraction cell coverage (as opposed to taking the `max` value across all underlying cells). Undefined (NA) values are ignored when they occur in the value raster, and cause the output to be NA when present in the weights (check these later in the inshore reefs). Below is a summary of the output:
 
 ```{r, message=FALSE, warning=FALSE, cache=TRUE}
 
@@ -267,11 +278,7 @@ saveRDS(gbr_shape_dhw, "/Users/rof011/GBR-coral-bleaching/data/gbr_shape_dhw.RDS
 
 ```
 
-The output is an `sfc` of polygons for each reef with max DHW for each year from 1984:2016 (see below example of the max DHW experienced at Heron Island vs Lizard Island in 2016).
-
-### 1) Individual reef timeseries
-
-The DHW dataset can be filtered to quantify the trajectories of individual reefs through time (for example Heron Island in the southern GBR and Lizard Island in the northern GBR):
+As the dataset is in `sf` format, the output for each year can be plotted spatially to compare the maximum DHW for adjacent reefs, for example Heron Reef and Lizard Reef (Lizard Reef is composed of multiple polygons based on label_ID) where the within-reef trajectories are fit with a simple GAM model:
 
 ```{r, fig.width=7, fig.height=5, warning=FALSE, message=FALSE}
 
@@ -284,7 +291,7 @@ a <- tm_shape(gbr_shape_dhw |> filter(grepl("Lizard", gbr_name)) |> mutate(dhw_m
 
 
 b <- tm_shape(gbr_shape_dhw |> filter(gbr_name=="Heron Reef") |> mutate(dhw_max_2016=as.numeric(dhw_max_2016))) + 
-  tm_polygons(col="dhw_max_2016", palette="-RdBu", breaks= seq(1:10), alpha=0.8) +
+  tm_polygons(col="dhw_max_2016", title="yearly maximum DHW (2016)", palette="-RdBu", breaks= seq(1:10), alpha=0.8) +
   tm_layout(main.title="Heron Reef (2016)", main.title.position = "center", main.title.size = 1) + 
   tm_graticules(lwd=0.2)
 
@@ -292,7 +299,7 @@ tmap_arrange(b,a, ncol=2)
 
 ```
 
-As the dataset is in `sf` format, the output for each year can be plotted spatially to compare the maximum DHW for adjacent reefs, for example Heron Reef and Lizard Reef (Lizard Reef is composed of multiple polygons based on label_ID) where the within-reef trajectories are fit with a simple GAM model:
+The resulting yearly maximum DHW dataset can also be filtered as a time-series to quantify the trajectories of individual reefs through time for example Heron Island in the southern GBR and Lizard Island in the northern GBR (note RdBu used over NOAA palette as it's confusing for interspaced polygons):
 
 ```{r, fig.width=7, fig.height=3.5, warning=FALSE, message=FALSE}
 
@@ -318,4 +325,4 @@ ggplot() + theme_bw() + facet_wrap(~gbr_name, ncol=2) +
 
 ```
 
-
+#### 

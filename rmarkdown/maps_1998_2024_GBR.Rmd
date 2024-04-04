@@ -1,0 +1,52 @@
+---
+title: "Reef-scale trajectories of mass coral bleaching (1986:2024)"
+author: "George Roff"
+date: "2024-03-29"
+output:
+  html_document:
+    theme: spacelab
+    highlight: textmate
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For clearer spatial comparisons between the past 7 mass coral bleaching events, the interactive approach can be used to synchronise spatial maps of DHW among reefs:
+
+
+```{r, message=FALSE, warning=FALSE, fig.width=11, fig.height=9}
+gbr_shape_dhw2 <- gbr_shape_dhw |> 
+  st_simplify(preserveTopology = FALSE, dTolerance = 10)
+
+
+#   DHWcolors <- c("#d2f8f9", "#433374", "#615192", "#7f6faf", "#9d8dcd", "#ffff54",
+# "#f9dd4a", "#f4bc41", "#f19b38", "#ea3323", "#c0281b", "#921c12",
+# "#641009", "#d88252", "#a85f34", "#754025", "#502f19", "#dc2fe8",
+# "#b726c1", "#921c9b", "#6e1274", "#2d0330")
+
+# reshape data to long format
+gbr_shape_dhw_long <- gbr_shape_dhw2 %>%
+  pivot_longer(cols = starts_with("dhw_max_"), names_to = "year", values_to = "dhw_max") %>%
+  mutate(year = str_replace(year, "dhw_max_", ""))  |> 
+  mutate(dhw_max = round(dhw_max, 1))
+
+
+# Plotting
+#tm_basemap("Esri.WorldImagery") +
+  tm_shape(gbr_shape_dhw_long |> filter(year %in% c("1998","2002","2012",
+                                                    "2016","2017","2020",
+                                                    "2022","2024"))) + 
+  tm_polygons(col="dhw_max", palette="-RdBu", breaks=seq(0,20,1), alpha=0.8, legend.show=FALSE) +
+  tm_facets(by="year", ncol=4, sync=TRUE) +  
+  tm_layout(main.title="DHW Max by Year") +
+  tm_view(set.view = c(145.3, -14.5, 9))
+
+```
+
+
