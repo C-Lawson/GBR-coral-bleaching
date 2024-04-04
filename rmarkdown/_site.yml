@@ -12,23 +12,21 @@ navbar:
       icon: fa-gear
     - text: "DHW analysis"
       icon: fa-bar-chart
-      menu:
-        - text: "GBR-wide trajectories (1986:2024)"
-          href: timeseries.html
-        - text: "Spatial patterns of the 2024 event"
-          href: spatial-patterns.html
-        - text: "Spatial patterns of mass bleaching events"
-          href: spatial-patterns2.html
-    - text: "DHW time-series"
+      href: timeseries.html
+    - text: "Interactive DHW time-series"
       icon: fa-line-chart
       menu:
-        - text: "Reef-scale time-series"
-          href: reef-level-trajectories2.html
-        - text: "Reef-scale trajectories"
-          href: reef-level-trajectories2.html
-    - text: "Spatial maps"
-      href: bleaching-maps.html
+        - text: "Timeseries"
+          href: reef-level-timeseries.html
+        - text: "Trajectories"
+          href: reef-level-trajectories.html
+    - text: "Interactive DHW maps"
       icon: fa-globe
+      menu:
+        - text: "2024 event"
+          href: maps_2024_GBR.html
+        - text: "All mass bleaching events"
+          href: maps_1998_2024_GBR.html
     - text: "GitHub"
       icon: fa-github
       href: https://github.com/marine-ecologist/
