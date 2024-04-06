@@ -16,12 +16,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+Interacive spatial maps of the 2024 mass coral bleaching event (click on individual reefs for `reef_name` / `label_ID` and maximum DHW exposure during previous events 1998, 2002, 2016, 2017, 2020 & 2022):
 
-### 3) Spatial patterns
-
-Previous studies have shown considerable variability in the spatial footprint of mass bleaching events on the GBR, with the southern region remaining relatively unimpacted by thermal stress in the past 4 mass bleaching events.
-
-The `sf` output can be used to generate interactive maps to explore the extent of DHW across reefs in the current 2024 event (click individual reefs to see the reef_name / label_ID and DHW from previous events in 1998, 2002, 2012, 2016, 2017, & 2020):
 
 ```{r, message=FALSE, warning=FALSE, fig.width=9, fig.height=9}
 
@@ -39,11 +35,11 @@ library(tidyterra)
 
 gbr_shape_dhw <- readRDS("/Users/rof011/GBR-coral-bleaching/data/gbr_shape_dhw.RDS")
 
-gbr_shape_dhw2 <- gbr_shape_dhw |> 
+gbr_shape_dhw_simple <- gbr_shape_dhw |> 
   st_simplify(preserveTopology = FALSE, dTolerance = 10)
 
 
-gbr_shape_dhw_map <- gbr_shape_dhw2 %>%
+gbr_shape_dhw_map <- gbr_shape_dhw_simple %>%
   mutate(across(where(is.numeric), round, digits = 1))
 
 tmap_mode("view")

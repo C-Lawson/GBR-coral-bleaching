@@ -129,9 +129,7 @@ head(gbr_shape) |> kable("html") %>%
   scroll_box(width = "100%")
 
 
-### note. 99 reefs
 
-tm_shape(gbr_shape |> filter(str_detect(id, "99"))) + tm_fill("red") 
 
 ```
 
@@ -173,30 +171,36 @@ Further analysis on the distribution/shape of DHW will inform how the 2024 event
 *Note: each year of data is \~480mb in size, so total download size is \~15gb and may take some time*
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+gbr_shape_bbox <- gbr_shape |>
+  st_transform(4326) |>
+  st_bbox()
+gbr_shape_bbox <- gbr_shape |>
+  st_transform(4326) |>
+  st_bbox() |>
+  st_as_sfc() |>
+  st_buffer(1) |>
+  st_bbox()
 
-gbr_shape_bbox <- gbr_shape |> st_transform(4326) |> st_bbox()
-gbr_shape_bbox <- gbr_shape |> st_transform(4326) |> st_bbox() |> st_as_sfc() |> st_buffer(1) |> st_bbox()
-
-# custom function for DHW conversion to spatraster 
+# custom function for DHW conversion to spatraster
 # (there are better functions to download erdapp data e.g. rerddap::griddap but this works for spatraster conversion ofyearly maximum DHW per polygon)
-get_dhw_gbr <- function(timestart, timeend, timeout=60, crs="EPSG:20353"){
+get_dhw_gbr <- function(timestart, timeend, timeout = 60, crs = "EPSG:20353") {
   gbr_dhw_url <- paste0(
     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.csv?", "CRW_DHW", "%5B(", timestart,
     "T12:00:00Z):1:(", timeend, "T12:00:00Z)%5D%5B(",
-   -24.86075, "):1:(", -10.27304, ")%5D%5B(",
-   141.9369 , "):1:(", 153.2032 ,
+    -24.86075, "):1:(", -10.27304, ")%5D%5B(",
+    141.9369, "):1:(", 153.2032,
     ")%5D"
   )
   temp_file <- tempfile(fileext = ".csv")
   GET(url = gbr_dhw_url, write_disk(temp_file, overwrite = TRUE), timeout(timeout))
-  csvdata <- read.csv(temp_file, header = TRUE, skip=1)
-  write_csv(csvdata, paste0("dhw_", start_date, "_raw.csv")) 
+  csvdata <- read.csv(temp_file, header = TRUE, skip = 1)
+  write_csv(csvdata, paste0("dhw_", start_date, "_raw.csv"))
   print(paste0("Downloading ", start_date, " - ", end_date))
   csvdata <- csvdata |>
-    dplyr::select(2,3,4) |>
+    dplyr::select(2, 3, 4) |>
     dplyr::group_by(degrees_east, degrees_north) |>
-    summarise(dhw = max(Celsius.weeks)) 
-  gbr_dhw <- tidyterra::as_spatraster(csvdata, crs="EPSG:4326") |> project("EPSG:20353")
+    summarise(dhw = max(Celsius.weeks))
+  gbr_dhw <- tidyterra::as_spatraster(csvdata, crs = "EPSG:4326") |> project("EPSG:20353")
   return(gbr_dhw)
 }
 
@@ -204,74 +208,76 @@ get_dhw_gbr <- function(timestart, timeend, timeout=60, crs="EPSG:20353"){
 
 gbr_dhw_data <- list()
 
-for(year in 1985:2023) {
-
+for (year in 1985:2023) {
   start_date <- paste0(year, "-01-01") # Define start and end dates for the given year
   end_date <- paste0(year, "-07-01")
-  dhw_data <- tryCatch({  # Fetch the DHW data for the GBR
-    get_dhw_gbr(start_date, end_date, timeout=500)
-  }, error = function(e) { #Use tryCatch to handle  errors or timeouts
-    message(paste("Error fetching data for year", year, ":", e$message))
-    NULL # Return NULL if there was an error
-  })
+  dhw_data <- tryCatch(
+    { # Fetch the DHW data for the GBR
+      get_dhw_gbr(start_date, end_date, timeout = 500)
+    },
+    error = function(e) { # Use tryCatch to handle  errors or timeouts
+      message(paste("Error fetching data for year", year, ":", e$message))
+      NULL # Return NULL if there was an error
+    }
+  )
 
-  gbr_dhw_data[[as.character(year)]] <- dhw_data #Store the list using the year as the name
-  
+  gbr_dhw_data[[as.character(year)]] <- dhw_data # Store the list using the year as the name
 }
 
 # Ammend 2024 data
 
-for(year in 2024) {
-
+for (year in 2024) {
   start_date <- paste0(year, "-01-01") # Define start and end dates for the given year
   end_date <- paste0(year, "-07-01")
-  dhw_data <- tryCatch({  # Fetch the DHW data for the GBR
-    get_dhw_gbr(start_date, end_date, timeout=500)
-  }, error = function(e) { #Use tryCatch to handle  errors or timeouts
-    message(paste("Error fetching data for year", year, ":", e$message))
-    NULL # Return NULL if there was an error
-  })
+  dhw_data <- tryCatch(
+    { # Fetch the DHW data for the GBR
+      get_dhw_gbr(start_date, end_date, timeout = 500)
+    },
+    error = function(e) { # Use tryCatch to handle  errors or timeouts
+      message(paste("Error fetching data for year", year, ":", e$message))
+      NULL # Return NULL if there was an error
+    }
+  )
 
-  gbr_dhw_data[[as.character(year)]] <- dhw_data #Store the list using the year as the name
-  
+  gbr_dhw_data[[as.character(year)]] <- dhw_data # Store the list using the year as the name
 }
 
 
 # function borrowed from FAMEFMR::saveSpatRasterList:
-gbr_dhw_data_list<-rapply(gbr_dhw_data_list,f=terra::wrap, classes = "SpatRaster",how="replace")
-qs::qsave(gbr_dhw_data_list,"gbr_dhw_data.RData")
-  
+gbr_dhw_data_list <- rapply(gbr_dhw_data_list, f = terra::wrap, classes = "SpatRaster", how = "replace")
+qs::qsave(gbr_dhw_data_list, "gbr_dhw_data.RData")
 
 ```
 
-#### iii) Spatial tools
+#### iii) Spatial calculations
 
 As DHW is automatically calculated each day in the NOAA dataset, the years in max DHW refer to the year of bleaching (e.g. 2016 = cumulative heatstress from the end of 2015 and the start of 2016). For each reef multipolygon in the `gbr_shape` dataset, the mean yearly maximum DHW in each year was calculated using an area-weighted approach. `exactextractr::exact_extract` was used over `stars::st_extract`, `vect::extract`, and `raster::extract` due to [performance issues](https://gis.stackexchange.com/questions/393763/extract-in-r-raster-package-incredibly-slow) with `stars`/`terra`/`rast`.
 
 The `exact_extract` approach used below is conservative in that for larger reef polygons (or multipolygons) the function calculates the `mean` value of cells that intersect the polygon, weighted by the fraction cell coverage (as opposed to taking the `max` value across all underlying cells). Undefined (NA) values are ignored when they occur in the value raster, and cause the output to be NA when present in the weights (check these later in the inshore reefs). Below is a summary of the output:
 
 ```{r, message=FALSE, warning=FALSE, cache=TRUE}
-
 library(reactable)
 
 gbr_shape_dhw_list <- qs::qread("/Users/rof011/GBR-coral-bleaching/data/gbr_dhw_data.RData")
 gbr_shape_dhw_list <- lapply(gbr_shape_dhw_list, function(x) terra::unwrap(x))
 gbr_shape_dhw_list <- terra::rast(gbr_shape_dhw_list)
-names(gbr_shape_dhw_list) <- paste0("year_", seq(1986,2024,1))
+names(gbr_shape_dhw_list) <- paste0("year_", seq(1986, 2024, 1))
 
-year_list <- paste0("year_", seq(1986,2024,1))
+year_list <- paste0("year_", seq(1986, 2024, 1))
 gbr_shape_dhw <- gbr_shape
 
 for (i in year_list) {
-  year_col_name <- paste("dhw_max", sub("^.*_", "", i), sep="_")
-  gbr_shape_dhw[[year_col_name]] <- exact_extract(gbr_shape_dhw_list[[i]], progress = FALSE,
-                                                  gbr_shape_dhw, fun = "mean", weights = "area")
+  year_col_name <- paste("dhw_max", sub("^.*_", "", i), sep = "_")
+  gbr_shape_dhw[[year_col_name]] <- exact_extract(gbr_shape_dhw_list[[i]],
+    progress = FALSE,
+    gbr_shape_dhw, fun = "mean", weights = "area"
+  )
 }
 
 
-head(gbr_shape_dhw) |> 
-  kable("html") |>  
-  kable_styling("striped", font_size=11) |>  
+head(gbr_shape_dhw) |>
+  kable("html") |>
+  kable_styling("striped", font_size = 11) |>
   scroll_box(width = "100%")
 
 saveRDS(gbr_shape_dhw, "/Users/rof011/GBR-coral-bleaching/data/gbr_shape_dhw.RDS")
@@ -281,21 +287,23 @@ saveRDS(gbr_shape_dhw, "/Users/rof011/GBR-coral-bleaching/data/gbr_shape_dhw.RDS
 As the dataset is in `sf` format, the output for each year can be plotted spatially to compare the maximum DHW for adjacent reefs, for example Heron Reef and Lizard Reef (Lizard Reef is composed of multiple polygons based on label_ID) where the within-reef trajectories are fit with a simple GAM model:
 
 ```{r, fig.width=7, fig.height=5, warning=FALSE, message=FALSE}
-
 tmap_mode("plot")
 
-a <- tm_shape(gbr_shape_dhw |> filter(grepl("Lizard", gbr_name)) |> mutate(dhw_max_2016=as.numeric(dhw_max_2016)) ) + 
-  tm_polygons(col="dhw_max_2016", palette="-RdBu", breaks= seq(1:10), alpha=0.8, legend.show=FALSE) + 
-  tm_layout(main.title="Lizard Island (2016)", main.title.position = "center", main.title.size = 1) +
-  tm_graticules(lwd=0.2)
+a <- tm_shape(gbr_shape_dhw |> filter(grepl("Lizard", gbr_name)) |>
+                mutate(dhw_max_2016 = as.numeric(dhw_max_2016))) +
+  tm_polygons(col = "dhw_max_2016", palette = "-RdBu", breaks = seq(1:10), alpha = 0.8, legend.show = FALSE) +
+  tm_layout(main.title = "Lizard Island (2016)", main.title.position = "center", main.title.size = 1) +
+  tm_graticules(lwd = 0.2)
 
 
-b <- tm_shape(gbr_shape_dhw |> filter(gbr_name=="Heron Reef") |> mutate(dhw_max_2016=as.numeric(dhw_max_2016))) + 
-  tm_polygons(col="dhw_max_2016", title="yearly maximum DHW (2016)", palette="-RdBu", breaks= seq(1:10), alpha=0.8) +
-  tm_layout(main.title="Heron Reef (2016)", main.title.position = "center", main.title.size = 1) + 
-  tm_graticules(lwd=0.2)
+b <- tm_shape(gbr_shape_dhw |> filter(gbr_name == "Heron Reef") |> 
+                mutate(dhw_max_2016 = as.numeric(dhw_max_2016))) +
+  tm_polygons(col = "dhw_max_2016", title = "yearly maximum DHW (2016)", 
+              palette = "-RdBu", breaks = seq(1:10), alpha = 0.8) +
+  tm_layout(main.title = "Heron Reef (2016)", main.title.position = "center", main.title.size = 1) +
+  tm_graticules(lwd = 0.2)
 
-tmap_arrange(b,a, ncol=2)
+tmap_arrange(b, a, ncol = 2)
 
 ```
 
@@ -325,4 +333,171 @@ ggplot() + theme_bw() + facet_wrap(~gbr_name, ncol=2) +
 
 ```
 
-#### 
+#### iv) validation
+
+To check the numbers are correct, redownload the cells adjacent to Lizard Island and reprocess to get annual DHW pattern from 1986-2015 from surrounding gridcells. Max DHW closely matches the area-weighted calculations above. 
+
+```{r, fig.width=7, fig.height=3.5, warning=FALSE, message=FALSE}
+
+  library(rerddap)
+  library(lubridate)
+# 
+#   lizard_ts_DHW <- rerddap::griddap(
+#     dataset="NOAA_DHW",
+#     time = c('1995-01-01','2024-04-01'),
+#     latitude = c(-14.70627, -14.64135),
+#     longitude = c(145.43233, 145.47928),
+#     fields = c("CRW_DHW","CRW_SST","CRW_SSTANOMALY"),
+#     stride = 1,
+#     fmt = "csv")
+# 
+#   lizard_ts_DHW_2 <- rerddap::griddap(
+#     dataset="NOAA_DHW",
+#     time = c('1986-01-01','1995-04-01'),
+#     latitude = c(-14.70627, -14.64135),
+#     longitude = c(145.43233, 145.47928),
+#     fields = c("CRW_DHW","CRW_SST","CRW_SSTANOMALY"),
+#     stride = 1,
+#     fmt = "csv")
+# 
+#   lizard_DHW <- rbind(lizard_ts_DHW_2, lizard_ts_DHW)
+#   write.csv(lizard_DHW, "data/lizard_DHW.csv")
+
+
+  dhw_subset_lizard <- dhw_subset |> 
+    filter(!gbr_name=="Heron Reef") |> 
+     mutate(year = as.character(year),
+         time = paste0(year, "-03-01T12:00:00Z")) |> 
+    mutate(time=ymd_hms(time)) |> 
+    rename(crw_dhw=dhw)
+  
+  
+  lizard_DHW <- read.csv("/Users/rof011/GBR-coral-bleaching/data/lizard_DHW.csv")
+  
+  lizard_DHW |>
+    mutate(time=ymd_hms(time)) |>
+    mutate(year= year(time)) |>
+    mutate(month=month(time)) |>
+    group_by(time) |>
+    summarise(crw_dhw=mean(crw_dhw), crw_sst=max(crw_sst)) |>
+  ggplot() + theme_bw() +
+    geom_line(aes(time, crw_dhw)) +
+   # geom_area(aes(time, crw_dhw), fill="darkred") +
+    scale_x_datetime(date_breaks = "1 year", date_labels = "%Y") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_y_continuous(limits=c(0,10), breaks=seq(0,10,2)) + 
+    ylab("Degree Heating Weeks")+ xlab("Year") +
+    geom_point(data=dhw_subset_lizard, aes(time, crw_dhw, fill=crw_dhw), stroke=0.5, size=3, shape=21) +
+    scale_fill_distiller(palette = "Reds", direction = 1, limits=c(0,10))
+  
+```
+
+and between-cell variance explains the difference between means:
+  
+```{r, fig.width=7, fig.height=3.5, warning=FALSE, message=FALSE}
+
+  lizard_DHW |>
+    mutate(time=ymd_hms(time)) |>
+    mutate(year= year(time)) |>
+    mutate(month=month(time)) |>
+    mutate(cell=paste0("(",longitude," / ",latitude,")")) |> 
+    mutate(cell=as.factor(cell)) |> 
+  ggplot() + theme_bw() +
+    geom_line(aes(time, crw_dhw, color=cell)) +
+    scale_x_datetime(date_breaks = "1 year", date_labels = "%Y") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_y_continuous(limits=c(0,10), breaks=seq(0,10,2)) + 
+    ylab("Degree Heating Weeks")+ xlab("Year") +
+    scale_color_viridis_d(direction=-1, option="C") +
+    geom_point(data=dhw_subset_lizard, aes(time, crw_dhw, fill=crw_dhw), stroke=0.5, size=3, shape=21) +
+    scale_fill_distiller(palette = "Reds", direction = 1, limits=c(0,10))
+  
+```
+
+finally plot spatial maps for max DHW per year showing the area-weighted vs cell-weighted approach:
+
+
+```{r, fig.width=7, fig.height=3.5, warning=FALSE, message=FALSE}
+
+# spatial
+
+lizard_spat <- lizard_DHW |>
+    mutate(time=ymd_hms(time)) |>
+    mutate(year= year(time)) |>
+    group_by(year, longitude, latitude) |>
+    summarise(crw_dhw=max(crw_dhw)) |>
+    pivot_wider(names_from="year", values_from="crw_dhw") |>
+    tidyterra::as_spatraster(crs="EPSG:4326", xycols = 1:2) |> project("EPSG:20353")
+
+gbr_shape_dhw <- readRDS("/Users/rof011/GBR-coral-bleaching/data/gbr_shape_dhw.RDS")
+
+
+lizard_shape_dhw_map <- gbr_shape_dhw %>%
+  st_transform(20353) |>
+  mutate(across(where(is.numeric), round, digits = 1)) |>
+  filter(grepl("Lizard", gbr_name))
+
+
+tmpthme <- theme(
+  axis.title.y = element_blank(),
+  axis.text.y = element_blank(),
+  axis.ticks.y = element_blank(),
+  axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+  plot.title = element_text(size = 10)
+)
+
+p1998 <- ggplot() +
+  theme_bw() +
+  tidyterra::geom_spatraster(data = lizard_spat, aes(fill = 1998), show.legend = FALSE) +
+  scale_fill_viridis_c(option = "C", limits = c(0, 10)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  geom_sf(data = lizard_shape_dhw_map, alpha=0.6) + ggtitle("1998") +
+  theme(plot.title = element_text(size = 10))
+p2002 <- ggplot() +
+  theme_bw() +
+  tidyterra::geom_spatraster(data = lizard_spat, aes(fill = 2002), show.legend = FALSE) +
+  tmpthme +
+  scale_fill_viridis_c(option = "C", limits = c(0, 10)) +
+  geom_sf(data = lizard_shape_dhw_map, alpha=0.6) + ggtitle("2002")
+p2012 <- ggplot() +
+  theme_bw() +
+  tidyterra::geom_spatraster(data = lizard_spat, aes(fill = 2012), show.legend = FALSE) +
+  tmpthme +
+  scale_fill_viridis_c(option = "C", limits = c(0, 10)) +
+  geom_sf(data = lizard_shape_dhw_map, alpha=0.6) + ggtitle("2012")
+p2016 <- ggplot() +
+  theme_bw() +
+  tidyterra::geom_spatraster(data = lizard_spat, aes(fill = 2016), show.legend = FALSE) +
+  tmpthme +
+  scale_fill_viridis_c(option = "C", limits = c(0, 10)) +
+  geom_sf(data = lizard_shape_dhw_map, alpha=0.6) + ggtitle("2016")
+p2017 <- ggplot() +
+  theme_bw() +
+  tidyterra::geom_spatraster(data = lizard_spat, aes(fill = 2017), show.legend = FALSE) +
+  tmpthme +
+  scale_fill_viridis_c(option = "C", limits = c(0, 10)) +
+  geom_sf(data = lizard_shape_dhw_map, alpha=0.6) + ggtitle("2017")
+p2020 <- ggplot() +
+  theme_bw() +
+  tidyterra::geom_spatraster(data = lizard_spat, aes(fill = 2020), show.legend = FALSE) +
+  tmpthme +
+  scale_fill_viridis_c(option = "C", limits = c(0, 10)) +
+  geom_sf(data = lizard_shape_dhw_map, alpha=0.6) + ggtitle("2020")
+p2022 <- ggplot() +
+  theme_bw() +
+  tidyterra::geom_spatraster(data = lizard_spat, aes(fill = 2022), show.legend = FALSE) +
+  tmpthme +
+  scale_fill_viridis_c(option = "C", limits = c(0, 10)) +
+  geom_sf(data = lizard_shape_dhw_map, alpha=0.6) + ggtitle("2022")
+p2024 <- ggplot() +
+  theme_bw() +
+  tidyterra::geom_spatraster(data = lizard_spat, aes(fill = 2024), show.legend = TRUE) +
+  tmpthme +
+  scale_fill_viridis_c(option = "C", limits = c(0, 10)) +
+  geom_sf(data = lizard_shape_dhw_map, alpha=0.6) + ggtitle("2024") + 
+  guides(fill=guide_legend(title="maxDHW"))
+
+p1998 | p2002 | p2012 | p2016 | p2017 | p2020 | p2022 | p2024
+
+         
+```

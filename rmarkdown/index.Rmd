@@ -8,10 +8,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-#### coral mortality in the northern GBR
+[Preliminary]{.underline} analysis of Degree Heating Weeks over the 2024 mass coral bleaching event and previous seven events (1998, 2002, 2016, 2017, 2020, 2022)  - george.roff\@csiro.au
 
-#### ![](images/Lizard-aerial-01.jpg)
-
-#### Degree Heating Weeks analysis
+Below: DHW animation of the 2024 event via [NOAA CRW](https://coralreefwatch.noaa.gov) 
 
 ![](images/dhw_animation_90day_gbr_930x580.gif)

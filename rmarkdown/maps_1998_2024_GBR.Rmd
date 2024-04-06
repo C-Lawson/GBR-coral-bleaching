@@ -16,12 +16,11 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-For clearer spatial comparisons between the past 7 mass coral bleaching events, the interactive approach can be used to synchronise spatial maps of DHW among reefs:
+Synchronised spatial maps of the 1998, 2002, 2016, 2017, 2020, 2022, 2024 mass coral bleaching events (click on individual reefs for `reef_name` / `label_ID`):
 
 
 ```{r, message=FALSE, warning=FALSE, fig.width=11, fig.height=9}
-gbr_shape_dhw2 <- gbr_shape_dhw |> 
+gbr_shape_dhw_simple <- gbr_shape_dhw |> 
   st_simplify(preserveTopology = FALSE, dTolerance = 10)
 
 
@@ -31,7 +30,7 @@ gbr_shape_dhw2 <- gbr_shape_dhw |>
 # "#b726c1", "#921c9b", "#6e1274", "#2d0330")
 
 # reshape data to long format
-gbr_shape_dhw_long <- gbr_shape_dhw2 %>%
+gbr_shape_dhw_simple_long <- gbr_shape_dhw_simple %>%
   pivot_longer(cols = starts_with("dhw_max_"), names_to = "year", values_to = "dhw_max") %>%
   mutate(year = str_replace(year, "dhw_max_", ""))  |> 
   mutate(dhw_max = round(dhw_max, 1))
@@ -39,10 +38,10 @@ gbr_shape_dhw_long <- gbr_shape_dhw2 %>%
 
 # Plotting
 #tm_basemap("Esri.WorldImagery") +
-  tm_shape(gbr_shape_dhw_long |> filter(year %in% c("1998","2002","2012",
+  tm_shape(gbr_shape_dhw_simple_long |> dplyr::filter(year %in% c("1998","2002","2012",
                                                     "2016","2017","2020",
                                                     "2022","2024"))) + 
-  tm_polygons(col="dhw_max", palette="-RdBu", breaks=seq(0,20,1), alpha=0.8, legend.show=FALSE) +
+  tm_dots(col="dhw_max", palette="-RdBu", breaks=seq(0,20,1), alpha=0.8, legend.show=FALSE) +
   tm_facets(by="year", ncol=4, sync=TRUE) +  
   tm_layout(main.title="DHW Max by Year") +
   tm_view(set.view = c(145.3, -14.5, 9))
