@@ -1,0 +1,32 @@
+---
+title: "Reef-scale trajectories of mass coral bleaching (1986:2024)"
+author: "George Roff"
+date: "2024-03-29"
+output:
+  html_document:
+    theme: spacelab
+    highlight: textmate
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Adjust the slider for pre/post images:
+
+Loading...
+via [https://marine-ecologist.shinyapps.io/flank-a-app//]("https://marine-ecologist.shinyapps.io/flank-a-app//") 
+<iframe src="https://marine-ecologist.shinyapps.io/flank-a-app//" height="1000px" width="100%" scrolling="yes" style="border:0;"></iframe>
+
+Loading...
+via [https://marine-ecologist.shinyapps.io/flank-a-app//]("https://marine-ecologist.shinyapps.io/flank-b-app//") 
+<iframe src="https://marine-ecologist.shinyapps.io/flank-b-app//" height="1000px" width="100%" scrolling="yes" style="border:0;"></iframe>
+
+Loading...
+via [https://marine-ecologist.shinyapps.io/flank-a-app//]("https://marine-ecologist.shinyapps.io/flank-a-app//") 
+<iframe src="https://marine-ecologist.shinyapps.io/flank-c-app//" height="1000px" width="100%" scrolling="yes" style="border:0;"></iframe>

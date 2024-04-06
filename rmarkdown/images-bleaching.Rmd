@@ -1,0 +1,58 @@
+---
+title: "Reef-scale trajectories of mass coral bleaching (1986:2024)"
+author: "George Roff"
+date: "2024-03-29"
+output:
+  html_document:
+    theme: spacelab
+    highlight: textmate
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Eyrie Reef pre/post bleaching (Dec 2023 vs Mar 2024)
+
+![](images/Eyrie-a.jpg)
+
+![](images/Eyrie-b.jpg)
+
+![](images/Eyrie-c.png)
+
+![](images/Eyrie4.png)
+
+## Aerial images (16th-20th March 2024)
+
+North Point
+
+![](images/north_point_a.jpg)
+
+![](images/north_point_b.jpg)
+
+![](images/north_point_c.jpg)
+
+Palfrey Island - South Island
+
+![](images/Palfrey_1 3.JPG)
+
+## Eyrie Reef (16th March 2024)
+
+![](images/Eyrie_16-3-24a.jpg)![](images/Eyrie_16-3-24b.jpg)![](images/Eyrie_16-3-24c.jpg)![](images/Eyrie_16-3-24d.jpg)![](images/Eyrie_16-3-24e.jpg)![](images/Eyrie_16-3-24f.jpg)![](images/Eyrie_16-3-24g.jpg)![](images/Eyrie_16-3-24h.jpg)![](images/Eyrie_16-3-24i.jpg)![](images/Eyrie_16-3-24j.jpg)![](images/Eyrie_16-3-24k.jpg)![](images/Eyrie_16-3-24l.jpg)
+
+## Lizard Island, Watson's Bay (19th March 2024)
+
+![](images/LIRS-a.jpg)
+
+![](images/LIRS-b.jpg)
+
+![](images/LIRS-c.jpg)
+
+![](images/LIRS-d.jpg)
+
+![](images/LIRS-e.jpg)

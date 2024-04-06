@@ -18,6 +18,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Adjust the slider for pre/post images
+
 Loading...
 via [https://marine-ecologist.shinyapps.io/DHWtimeseries/]("https://marine-ecologist.shinyapps.io/DHWtimeseries/") 
 <iframe src="https://marine-ecologist.shinyapps.io/DHWtimeseries/" height="1000px" width="100%" scrolling="yes" style="border:0;"></iframe>

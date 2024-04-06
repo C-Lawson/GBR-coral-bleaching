@@ -1,18 +1,15 @@
 name: "Mass Coral Bleaching on the Great Barrier Reef"
 output_dir: "_site"
 navbar:
-  title: "GBR bleaching analysis"
+  title: "GBR DHW analysis"
   type: default
   left:
-    - text: "Home"
-      href: index.html
-      icon: fa-home
     - text: "Methods"
       href: methods.html
       icon: fa-gear
     - text: "DHW analysis"
       icon: fa-bar-chart
-      href: timeseries.html
+      href: dhw_analysis.html
     - text: "Interactive DHW time-series"
       icon: fa-line-chart
       menu:
@@ -23,13 +20,20 @@ navbar:
     - text: "Interactive DHW maps"
       icon: fa-globe
       menu:
-        - text: "2024 event"
+        - text: "2024 mass bleaching event"
           href: maps_2024_GBR.html
-        - text: "All mass bleaching events"
+        - text: "1998 - 2024 mass bleaching events"
           href: maps_1998_2024_GBR.html
+    - text: "Images"
+      icon: fa-camera
+      menu:
+        - text: "Pre/post bleaching comparisons (2024)"
+          href: images-timeseries.html
+        - text: "northern GBR photographs (2024)"
+          href: images-bleaching.html
     - text: "GitHub"
       icon: fa-github
-      href: https://github.com/marine-ecologist/
+      href: https://github.com/marine-ecologist/GBR-coral-bleaching/
 output:
   html_document:
     theme: spacelab

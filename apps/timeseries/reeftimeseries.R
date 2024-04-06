@@ -71,7 +71,8 @@ server <- function(input, output, session) {
     df <- df |>
       filter_at(vars(reef_id), any_vars(. %in% unique(input$reef_id))) |>
       droplevels() |>
-    mutate(reef_id=as.character(reef_id))
+    mutate(reef_id=as.character(reef_id)) |>
+    mutate(dhw_max = round(dhw_max, 1))
 
     if(nrow(df)>0){
     plot <- ggplot(data=df, aes(x = year, y = dhw_max)) +

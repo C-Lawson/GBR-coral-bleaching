@@ -329,18 +329,11 @@ div.tocify {
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">GBR bleaching analysis</a>
+      <a class="navbar-brand" href="index.html">GBR DHW analysis</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="index.html">
-    <span class="fa fa-home"></span>
-     
-    Home
-  </a>
-</li>
-<li>
   <a href="methods.html">
     <span class="fa fa-gear"></span>
      
@@ -348,7 +341,7 @@ div.tocify {
   </a>
 </li>
 <li>
-  <a href="timeseries.html">
+  <a href="dhw_analysis.html">
     <span class="fa fa-bar-chart"></span>
      
     DHW analysis
@@ -381,15 +374,32 @@ div.tocify {
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="maps_2024_GBR.html">2024 event</a>
+      <a href="maps_2024_GBR.html">2024 mass bleaching event</a>
     </li>
     <li>
-      <a href="maps_1998_2024_GBR.html">All mass bleaching events</a>
+      <a href="maps_1998_2024_GBR.html">1998 - 2024 mass bleaching events</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="fa fa-camera"></span>
+     
+    Images
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="images-timeseries.html">Pre/post bleaching comparisons (2024)</a>
+    </li>
+    <li>
+      <a href="images-bleaching.html">northern GBR photographs (2024)</a>
     </li>
   </ul>
 </li>
 <li>
-  <a href="https://github.com/marine-ecologist/">
+  <a href="https://github.com/marine-ecologist/GBR-coral-bleaching/">
     <span class="fa fa-github"></span>
      
     GitHub
@@ -423,10 +433,10 @@ bleaching (1986:2024)</h1>
 </div>
 
 
-<p>For clearer spatial comparisons between the past 7 mass coral
-bleaching events, the interactive approach can be used to synchronise
-spatial maps of DHW among reefs:</p>
-<pre class="r"><code>gbr_shape_dhw2 &lt;- gbr_shape_dhw |&gt; 
+<p>Synchronised spatial maps of the 1998, 2002, 2016, 2017, 2020, 2022,
+2024 mass coral bleaching events (click on individual reefs for
+<code>reef_name</code> / <code>label_ID</code>):</p>
+<pre class="r"><code>gbr_shape_dhw_simple &lt;- gbr_shape_dhw |&gt; 
   st_simplify(preserveTopology = FALSE, dTolerance = 10)
 
 
@@ -436,7 +446,7 @@ spatial maps of DHW among reefs:</p>
 # &quot;#b726c1&quot;, &quot;#921c9b&quot;, &quot;#6e1274&quot;, &quot;#2d0330&quot;)
 
 # reshape data to long format
-gbr_shape_dhw_long &lt;- gbr_shape_dhw2 %&gt;%
+gbr_shape_dhw_simple_long &lt;- gbr_shape_dhw_simple %&gt;%
   pivot_longer(cols = starts_with(&quot;dhw_max_&quot;), names_to = &quot;year&quot;, values_to = &quot;dhw_max&quot;) %&gt;%
   mutate(year = str_replace(year, &quot;dhw_max_&quot;, &quot;&quot;))  |&gt; 
   mutate(dhw_max = round(dhw_max, 1))
@@ -444,10 +454,10 @@ gbr_shape_dhw_long &lt;- gbr_shape_dhw2 %&gt;%
 
 # Plotting
 #tm_basemap(&quot;Esri.WorldImagery&quot;) +
-  tm_shape(gbr_shape_dhw_long |&gt; filter(year %in% c(&quot;1998&quot;,&quot;2002&quot;,&quot;2012&quot;,
+  tm_shape(gbr_shape_dhw_simple_long |&gt; dplyr::filter(year %in% c(&quot;1998&quot;,&quot;2002&quot;,&quot;2012&quot;,
                                                     &quot;2016&quot;,&quot;2017&quot;,&quot;2020&quot;,
                                                     &quot;2022&quot;,&quot;2024&quot;))) + 
-  tm_polygons(col=&quot;dhw_max&quot;, palette=&quot;-RdBu&quot;, breaks=seq(0,20,1), alpha=0.8, legend.show=FALSE) +
+  tm_dots(col=&quot;dhw_max&quot;, palette=&quot;-RdBu&quot;, breaks=seq(0,20,1), alpha=0.8, legend.show=FALSE) +
   tm_facets(by=&quot;year&quot;, ncol=4, sync=TRUE) +  
   tm_layout(main.title=&quot;DHW Max by Year&quot;) +
   tm_view(set.view = c(145.3, -14.5, 9))</code></pre>
