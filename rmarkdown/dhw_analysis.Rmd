@@ -86,7 +86,7 @@ Comparisons of DHW experienced during the 2024 event with the previous
 eight mass coral bleaching events on the Great Barrier Reef (1998, 2002,
 2012, 2016, 2017, 2020, 2022, 2024)
 
-```{r, fig.width=9, fig.height=6, warning=FALSE, message=FALSE}
+```{r, fig.width=11, fig.height=6.5, warning=FALSE, message=FALSE}
 
 
 dhw_n_reefs <- gbr_shape_dhw |> 
