@@ -296,7 +296,7 @@ comparisons of DHW category frequency (\<1 DHW, 1-4 DHW, 4-8 DHW, 8-12
 DHW, 12-16 DHW, 16-20 DHW) between the seven mass coral bleaching events
 on the GBR:
 
-### a) Record Maximum Degree Heating Weeks
+### a) Highest Maximum Degree Heating Weeks
 
 Year in which the highest maximum DHW was experienced for each of the
 3,716 reefs:
@@ -383,20 +383,20 @@ gbr_shape_dhw |>
     scale_fill_distiller(palette = "Reds", direction = 1, limits=c(0,100)) 
     
    
+ 
+# max_dhw_data <- gbr_shape_dhw |>
+#   as.data.frame() |>
+#   dplyr::select(-geometry, -id, -gbr_name) |>
+#   pivot_longer(-c(reef_id), names_to="year", values_to="dhw_max") |>
+#   mutate(year = as.numeric(str_extract_all(year, "\\d+"))) |>
+#   filter(year %in% c(1998, 2002, 2016, 2017, 2020, 2022, 2024)) |>
+#   filter(dhw_max > 4) |>
+#   group_by(year) %>%
+#   summarise(count = n(),
+#   proportion=((count/length(unique(gbr_shape_dhw$reef_id)))*100)) #|>
+#  # mutate(count=paste0(paste0("(n=", count,")"))) 
 
-max_dhw_data <- gbr_shape_dhw |>
-  as.data.frame() |>
-  dplyr::select(-geometry, -id, -gbr_name) |>
-  pivot_longer(-c(reef_id), names_to="year", values_to="dhw_max") |>
-  mutate(year = as.numeric(str_extract_all(year, "\\d+"))) |>
-  filter(year %in% c(1998, 2002, 2016, 2017, 2020, 2022, 2024)) |>
-  filter(dhw_max > 4) |>
-  group_by(year) %>%
-  summarise(count = n(),
-  proportion=((count/length(unique(gbr_shape_dhw$reef_id)))*100)) #|>
- # mutate(count=paste0(paste0("(n=", count,")"))) 
-
-  summary(lm(count~year, data=max_dhw_data))
+#   summary(lm(count~year, data=max_dhw_data))
 
 ```
 
