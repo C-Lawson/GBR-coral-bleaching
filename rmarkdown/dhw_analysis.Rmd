@@ -29,6 +29,8 @@ Watch](https://coralreefwatch.noaa.gov) daily satellite DHW data
 reefs on the GBR, see methods/code/datasets
 [here](https://marine-ecologist.github.io/GBR-coral-bleaching/methods.html)).
 
+<br>
+
 ## 1 Spatial map of Degree Heating Weeks
 
 ### a) 2024 mass coral bleaching event
@@ -38,7 +40,7 @@ bleaching event (01/01/24 - 01/04/24) for 3,716 reefs on the Great
 Barrier Reef (note DHW exceeds \>12 but is limited to 0-12 DHW on the
 scale/legend):
 
-```{r, fig.width=7, fig.height=9, warning=FALSE, message=FALSE}
+```{r, fig.width=7, fig.height=9, cache=TRUE, warning=FALSE, message=FALSE}
 
 library(sf)
 library(ggplot2)
@@ -79,14 +81,13 @@ ggplotly(p, tooltip = c("reef_id", "max_dhw"))
 
 ```
 
-
 ### b) 1998 - 2024 mass coral bleaching events
 
 Comparisons of DHW experienced during the 2024 event with the previous
 eight mass coral bleaching events on the Great Barrier Reef (1998, 2002,
 2012, 2016, 2017, 2020, 2022, 2024)
 
-```{r, fig.width=9, fig.height=6, warning=FALSE, message=FALSE}
+```{r, fig.width=11, fig.height=9, cache=TRUE, warning=FALSE, message=FALSE}
 
 
 dhw_n_reefs <- gbr_shape_dhw |> 
@@ -216,6 +217,8 @@ plot20XX <- ggplot() + theme_bw() +
 
 ```
 
+<br>
+
 ## 2) Increasing frequency and intensity of max Degree Heating Weeks {.tabset}
 
 Using yearly maximum DHW to compare changes in the distributions of DHW
@@ -227,7 +230,7 @@ Changes in distributions of Degree Heating Weeks per reef over time
 during the seven mass coral bleaching events (1998, 2002, 2016, 2017,
 2020, 2022, 2024)
 
-```{r, fig.width=7, fig.height=6, warning=FALSE, message=FALSE}
+```{r, fig.width=7, fig.height=6, cache=TRUE, warning=FALSE, message=FALSE}
 library(sf)
 library(ggplot2)
 library(tidyverse)
@@ -272,7 +275,7 @@ Changes in distributions of Degree Heating Weeks per reef during the
 seven mass coral bleaching events (1998, 2002, 2016, 2017, 2020, 2022,
 2024):
 
-```{r, fig.width=7, fig.height=6, warning=FALSE, message=FALSE}
+```{r, fig.width=7, fig.height=6, cache=TRUE, warning=FALSE, message=FALSE}
 
 
 b <- ggplot() + theme_bw() +  
@@ -289,6 +292,8 @@ b
 
 ```
 
+<br>
+
 ## 3. Shifts in thermal stress during mass coral bleaching events (1998-2024) {.tabset}
 
 Timing (year) of the highest maximum DHW per reef (3,174 reefs) and
@@ -304,7 +309,7 @@ Year in which the highest maximum DHW was experienced for each of the
 -   46% of reefs on the GBR experienced record max DHW in the 2024
     event, with the majority of these reefs in the southern GBR region.
 
-```{r, fig.width=7, fig.height=5, warning=FALSE, message=FALSE}
+```{r, fig.width=7, fig.height=5, cache=TRUE, warning=FALSE, message=FALSE}
 
 dhw_subset_bleaching_topn <- gbr_shape_dhw |> 
   as.data.frame() |> 
@@ -352,9 +357,10 @@ hist | map
 
 ### b) Increasing frequency of DHW through time
 
--   Total number of reefs exposed to >4DHW in each of the seven previous mass bleaching events (R2 = 0.83): 
+-   Total number of reefs exposed to \>4DHW in each of the seven
+    previous mass bleaching events (R2 = 0.83):
 
-```{r, fig.width=5, fig.height=4, warning=FALSE, message=FALSE}
+```{r, fig.width=5, fig.height=4, cache=TRUE, warning=FALSE, message=FALSE}
 gbr_shape_dhw |>
   as.data.frame() |>
   dplyr::select(-geometry, -id, -gbr_name) |>
@@ -406,7 +412,7 @@ gbr_shape_dhw |>
     events indicates increasing intensity of DHW since the first event
     in 1998:
 
-```{r, fig.width=11, fig.height=3.5, warning=FALSE, message=FALSE}
+```{r, fig.width=11, fig.height=3.5, cache=TRUE, warning=FALSE, message=FALSE}
 
 dhw_subset_bleaching_dhw |> # 25,598 reefs with na_omit()
   mutate(bins = cut(dhw_max, seq(0,20,4))) |> 
@@ -441,7 +447,7 @@ decreased since 1998, with increases in the moderate (4-8DHW)
 increasingly severe categories (8-12DHW, 12-16DHW) and the "new"
 category "severe" bleaching in 2024 (16-20DHW) :
 
-```{r, fig.width=11, fig.height=3.5, warning=FALSE, message=FALSE}
+```{r, fig.width=11, fig.height=3.5, cache=TRUE, warning=FALSE, message=FALSE}
 
 
 dhw_subset_bleaching_dhw |> 
@@ -474,6 +480,8 @@ dhw_subset_bleaching_dhw |>
   
 ```
 
+<br>
+
 ## 4) Recurrent thermal stress over the past decade
 
 The Great Barrier Reef has experienced five mass bleaching events (2016,
@@ -490,7 +498,7 @@ The Great Barrier Reef has experienced five mass bleaching events (2016,
     northern GBR, with 5% of reefs (n=156) exposed to five \>6DHW events
     and \~2.5% of reefs (n=74) exposed to six \>6DHW events.
 
-```{r, fig.width=11, fig.height=3.5, warning=FALSE, message=FALSE}
+```{r, fig.width=11, fig.height=3.5, cache=TRUE, warning=FALSE, message=FALSE}
 
   ### DHW 6 once
   dhw_impacted_reefs <- gbr_shape_dhw |>
@@ -655,7 +663,7 @@ The Great Barrier Reef has experienced five mass bleaching events (2016,
     2021, 2022, 2024) after three decades of minimal thermal stress (\<4
     DHW)
 
-```{r, fig.width=9, fig.height=4.5, warning=FALSE, message=FALSE}
+```{r, fig.width=9, fig.height=4.5, cache=TRUE, warning=FALSE, message=FALSE}
 
 gbr_shape_dhw |> 
   as.data.frame() |> # 3,716 reef_id
@@ -672,6 +680,8 @@ ggplot() + theme_bw() +
   scale_fill_manual(values=c("red", "white"))
 
 ```
+
+<br>
 
 ## 5) Emerging heat stress on previously unimpacted reefs
 
@@ -690,7 +700,7 @@ the recovery time since they last experienced \>4DHW conditions?
     \>4DHW conditions in the 2024 event have no record of \>4DHW
     conditions in the entire record (1986-2024).
 
-```{r, fig.width=9, fig.height=5, warning=FALSE, message=FALSE}
+```{r, fig.width=9, fig.height=5, cache=TRUE, warning=FALSE, message=FALSE}
 
 
 # Get all reefs in 2024 that are >4 DHW
@@ -757,6 +767,8 @@ record_a|record_b
 
 ```
 
+<br>
+
 ## 6) Trajectories of DHW on the GBR
 
 A (very) simple analysis of the time-series for the 3,716 reefs on the
@@ -764,7 +776,7 @@ GBR indicates increasing trajectories of DHW across the 38 year time
 period (note: preliminary, a more detailed analysis is required to
 quantify these trends):
 
-```{r, fig.width=7, fig.height=5, warning=FALSE, message=FALSE}
+```{r gam, fig.width=7, fig.height=5, cache=TRUE, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(sf)
 library(ggplot2)

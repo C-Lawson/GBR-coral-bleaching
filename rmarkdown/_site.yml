@@ -1,5 +1,5 @@
 name: "Mass Coral Bleaching on the Great Barrier Reef"
-output_dir: "_site"
+output_dir: "_docs"
 navbar:
   title: "GBR DHW analysis"
   type: default
