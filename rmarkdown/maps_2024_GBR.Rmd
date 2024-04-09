@@ -42,16 +42,26 @@ gbr_shape_dhw_simple <- gbr_shape_dhw |>
 gbr_shape_dhw_map <- gbr_shape_dhw_simple %>%
   mutate(across(where(is.numeric), round, digits = 1))
 
-tmap_mode("view")
 
-  tm_basemap("Esri.WorldImagery") +
+dhw_scale=c("#a5d3e5", "#eddf8c", "#ff9a15", "#820000")
+breaks <- c(0, 4, 8, 12, 16, 20) # Modify this based on your needs
+labels <- c("0", "4", "8", "12", "16", "20") # Modify labels accordingly
+
+tm_basemap("Esri.WorldImagery") +
   tm_shape(gbr_shape_dhw_map) +
-    tm_polygons(col="dhw_max_2024",  title="DHW Max 2024", palette="-RdBu", 
-                breaks= seq(0,20,1), alpha=0.8, legend.show=TRUE,
-                popup.vars = c("dhw_max_1998", "dhw_max_2002", "dhw_max_2016", 
-                    "dhw_max_2017", "dhw_max_2020", "dhw_max_2022", "dhw_max_2024")) + 
-    
+    tm_polygons(col="dhw_max_2024",  
+              title="max DHW 2024", 
+              palette = dhw_scale,
+              style = "fixed",   
+              #labels = labels,
+              breaks=breaks,
+              #midpoint=10,
+              legend.show=TRUE,
+              alpha=0.8, 
+              popup.vars = c("dhw_max_1998", "dhw_max_2002", "dhw_max_2016", 
+                             "dhw_max_2017", "dhw_max_2020", "dhw_max_2022", "dhw_max_2024")) + 
   tm_view(set.view = c(145.3, -14.5, 10)) 
+
 
 
 ```

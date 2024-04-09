@@ -36,12 +36,27 @@ gbr_shape_dhw_simple_long <- gbr_shape_dhw_simple %>%
   mutate(dhw_max = round(dhw_max, 1))
 
 
-# Plotting
+dhw_scale=c("#a5d3e5", "#eddf8c", "#ff9a15", "#820000")
+breaks <- c(0, 4, 8, 12, 16, 20) # Modify this based on your needs
+labels <- c("0", "4", "8", "12", "16", "20") # Modify labels accordingly
+
+
+tmap_mode("view")
+
 #tm_basemap("Esri.WorldImagery") +
   tm_shape(gbr_shape_dhw_simple_long |> dplyr::filter(year %in% c("1998","2002","2012",
                                                     "2016","2017","2020",
-                                                    "2022","2024"))) + 
-  tm_dots(col="dhw_max", palette="-RdBu", breaks=seq(0,20,1), alpha=0.8, legend.show=FALSE) +
+                                                    "2022","2024"))) +
+    tm_polygons(col="dhw_max",  
+              title="max DHW", 
+              palette = dhw_scale,
+              style = "fixed",   
+              #labels = labels,
+              breaks=breaks,
+              #midpoint=10,
+              legend.show=TRUE,
+              alpha=0.8 
+              ) + 
   tm_facets(by="year", ncol=4, sync=TRUE) +  
   tm_layout(main.title="DHW Max by Year") +
   tm_view(set.view = c(145.3, -14.5, 9))
