@@ -66,16 +66,37 @@ ausmap <- rnaturalearth::ne_countries(scale="large", country="Australia") |>
             st_buffer(50000))
 
 # map via ggplot2 and ggplotly:
+# p <- ggplot() + theme_bw() +
+#   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
+#   geom_sf(data=gbr_shape_dhw |> 
+#             #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
+#             #select(dhw_max_2024, reef_id) |> 
+#             mutate(max_dhw=dhw_max_2024) |> 
+#             rename(`max DHW \n` = "dhw_max_2024"), 
+#           aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
+#   scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
+#                        na.value="darkred",  labels=c("0","3","6","9",">12")) 
+
+dhw_colour_breaks <- c(2, 4, 8, 12, 16)
+dhw_scale=c("#a5d3e5", "#eddf8c", "#ff9a15", "#820000")
+
+
 p <- ggplot() + theme_bw() +
   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
   geom_sf(data=gbr_shape_dhw |> 
-            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
-            #select(dhw_max_2024, reef_id) |> 
-            mutate(max_dhw=dhw_max_2024) |> 
+            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >16, 16, dhw_max_2024)) |>
+            select(dhw_max_2024, reef_id) |>
+            mutate(max_dhw=round(dhw_max_2024,1)) |> 
             rename(`max DHW \n` = "dhw_max_2024"), 
-          aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
-  scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
-                       na.value="darkred",  labels=c("0","3","6","9",">12")) 
+          aes(fill=max_dhw), shape=21, stroke=0.1) +
+  scale_fill_gradientn(
+    limits  = c(0,22),
+    name = "max DHW",
+    labels = c(0, 4, 8, 12, 16),
+    colours = dhw_scale[c(1, seq_along(dhw_scale), length(dhw_scale))],
+    values  = c(0, scales::rescale(dhw_colour_breaks, from = c(0,22)), 1),
+  )
+
 
 ggplotly(p, tooltip = c("reef_id", "max_dhw")) 
 
@@ -86,7 +107,6 @@ ggplotly(p, tooltip = c("reef_id", "max_dhw"))
 Comparisons of DHW experienced during the 2024 event with the previous
 eight mass coral bleaching events on the Great Barrier Reef (1998, 2002,
 2012, 2016, 2017, 2020, 2022, 2024)
-
 
 ```{r, fig.width=11, fig.height=9, cache=TRUE, warning=FALSE, message=FALSE}
 
@@ -101,102 +121,259 @@ dhw_n_reefs <- gbr_shape_dhw |>
   mutate(sum=n()) |> 
   group_by(year) %>%
   summarise(count = n(), proportion=round((count/unique(sum)) *100))
+# 
+# # 3,716 reefs
+# plot1998 <- ggplot() + theme_bw() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
+#   geom_sf(data=gbr_shape_dhw |> 
+#             #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
+#             #select(dhw_max_2024, reef_id) |> 
+#             mutate(max_dhw=dhw_max_1998) |> 
+#             rename(`max DHW \n` = "dhw_max_1998"), show.legend=FALSE,
+#           aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
+#   scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
+#                        na.value="darkred",  labels=c("0","3","6","9",">12"))  +
+#   ggtitle("1998")
+# 
+# 
+# plot2002 <- ggplot() + theme_bw() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
+#   geom_sf(data=gbr_shape_dhw |> 
+#             #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
+#             #select(dhw_max_2024, reef_id) |> 
+#             mutate(max_dhw=dhw_max_2002) |> 
+#             rename(`max DHW \n` = "dhw_max_2002"), show.legend=FALSE,
+#           aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
+#   scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
+#                        na.value="darkred",  labels=c("0","3","6","9",">12"))  +
+#   ggtitle("2002")
+# 
+# plot2016 <- ggplot() + theme_bw() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
+#   geom_sf(data=gbr_shape_dhw |> 
+#             #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
+#             #select(dhw_max_2024, reef_id) |> 
+#             mutate(max_dhw=dhw_max_2016) |> 
+#             rename(`max DHW \n` = "dhw_max_2016"), show.legend=FALSE,
+#           aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
+#   scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
+#                        na.value="darkred",  labels=c("0","3","6","9",">12"))  +
+#   ggtitle("2016")
+# 
+# 
+# plot2017 <- ggplot() + theme_bw() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
+#   geom_sf(data=gbr_shape_dhw |> 
+#             #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
+#             #select(dhw_max_2024, reef_id) |> 
+#             mutate(max_dhw=dhw_max_2017) |> 
+#             rename(`max DHW \n` = "dhw_max_2017"), show.legend=FALSE,
+#           aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
+#   scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
+#                        na.value="darkred",  labels=c("0","3","6","9",">12"))  +
+#   ggtitle("2017")
+# 
+# 
+# plot2020 <- ggplot() + theme_bw() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
+#   geom_sf(data=gbr_shape_dhw |> 
+#             #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
+#             #select(dhw_max_2024, reef_id) |> 
+#             mutate(max_dhw=dhw_max_2020) |> 
+#             rename(`max DHW \n` = "dhw_max_2020"), show.legend=FALSE,
+#           aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
+#   scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
+#                        na.value="darkred",  labels=c("0","3","6","9",">12"))  +
+#   ggtitle("2020")
+# 
+# 
+# plot2022 <- ggplot() + theme_bw() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
+#   geom_sf(data=gbr_shape_dhw |> 
+#             #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
+#             #select(dhw_max_2024, reef_id) |> 
+#             mutate(max_dhw=dhw_max_2022) |> 
+#             rename(`max DHW \n` = "dhw_max_2022"), show.legend=FALSE,
+#           aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
+#   scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
+#                        na.value="darkred",  labels=c("0","3","6","9",">12"))  +
+#   ggtitle("2022")
+# 
+# plot2024 <- ggplot() + theme_bw() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
+#   geom_sf(data=gbr_shape_dhw |> 
+#             #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
+#             #select(dhw_max_2024, reef_id) |> 
+#             mutate(max_dhw=dhw_max_2024) |> 
+#             rename(`max DHW \n` = "dhw_max_2024"), show.legend=FALSE,
+#           aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
+#   scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
+#                        na.value="darkred",  labels=c("0","3","6","9",">12"))  +
+#   ggtitle("2024")
+# 
+# plot20XX <- ggplot() + theme_bw() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   geom_sf(data=ausmap, fill="olivedrab4", linewidth=0,alpha=0) +
+#   theme(panel.grid.major = element_blank(), 
+#         panel.grid.minor = element_blank(),
+#         axis.title.x = element_blank(),
+#         axis.title.y = element_blank(),
+#         axis.text.x = element_blank(),
+#         axis.text.y = element_blank())
+
+# (plot1998|plot2002)/
+# (plot2016|plot2017|plot2020)/
+# (plot2022|plot2024|plot20XX)
+
+
 
 # 3,716 reefs
-plot1998 <- ggplot() + theme_bw() +
+plot1998 <- 
+gbr_shape_dhw |> 
+  mutate(max_dhw=dhw_max_1998) |> 
+  mutate(dhw_bins=cut(max_dhw, breaks=c(-0.01,4,8,12,16,20), 
+                      labels=c("0-4 DHW", "4-8 DHW", "8-12 DHW", "12-16 DHW", "16-20 DHW"))) |> 
+  rename(`max DHW \n` = "dhw_max_2024") |> 
+
+ggplot() + theme_bw() + #facet_wrap(~dhw_bins) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_sf(aes(fill=max_dhw), alpha=0, show.legend=FALSE) +
   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
-  geom_sf(data=gbr_shape_dhw |> 
-            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
-            #select(dhw_max_2024, reef_id) |> 
-            mutate(max_dhw=dhw_max_1998) |> 
-            rename(`max DHW \n` = "dhw_max_1998"), show.legend=FALSE,
-          aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
-  scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
-                       na.value="darkred",  labels=c("0","3","6","9",">12"))  +
-  ggtitle("1998")
+  geom_sf(aes(fill=max_dhw), shape=21, stroke=0.1, show.legend=FALSE) +
+  scale_fill_gradientn(
+    limits  = c(0,22),
+    name = "max DHW",
+    labels = c(0, 4, 8, 12, 16),
+    colours = dhw_scale[c(1, seq_along(dhw_scale), length(dhw_scale))],
+    values  = c(0, scales::rescale(dhw_colour_breaks, from = c(0,22)), 1),
+  ) + ggtitle("1998")
 
+plot2002 <- 
+gbr_shape_dhw |> 
+  mutate(max_dhw=dhw_max_2002) |> 
+  mutate(dhw_bins=cut(max_dhw, breaks=c(-0.01,4,8,12,16,20), 
+                      labels=c("0-4 DHW", "4-8 DHW", "8-12 DHW", "12-16 DHW", "16-20 DHW"))) |> 
+  rename(`max DHW \n` = "dhw_max_2024") |> 
 
-plot2002 <- ggplot() + theme_bw() +
+ggplot() + theme_bw() + #facet_wrap(~dhw_bins) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_sf(aes(fill=max_dhw), alpha=0, show.legend=FALSE) +
   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
-  geom_sf(data=gbr_shape_dhw |> 
-            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
-            #select(dhw_max_2024, reef_id) |> 
-            mutate(max_dhw=dhw_max_2002) |> 
-            rename(`max DHW \n` = "dhw_max_2002"), show.legend=FALSE,
-          aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
-  scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
-                       na.value="darkred",  labels=c("0","3","6","9",">12"))  +
-  ggtitle("2002")
+  geom_sf(aes(fill=max_dhw), shape=21, stroke=0.1, show.legend=FALSE) +
+  scale_fill_gradientn(
+    limits  = c(0,22),
+    name = "max DHW",
+    labels = c(0, 4, 8, 12, 16),
+    colours = dhw_scale[c(1, seq_along(dhw_scale), length(dhw_scale))],
+    values  = c(0, scales::rescale(dhw_colour_breaks, from = c(0,22)), 1),
+  ) + ggtitle("2002")
 
-plot2016 <- ggplot() + theme_bw() +
+plot2016 <- 
+gbr_shape_dhw |> 
+  mutate(max_dhw=dhw_max_2016) |> 
+  mutate(dhw_bins=cut(max_dhw, breaks=c(-0.01,4,8,12,16,20), 
+                      labels=c("0-4 DHW", "4-8 DHW", "8-12 DHW", "12-16 DHW", "16-20 DHW"))) |> 
+  rename(`max DHW \n` = "dhw_max_2024") |> 
+
+ggplot() + theme_bw() + #facet_wrap(~dhw_bins) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_sf(aes(fill=max_dhw), alpha=0, show.legend=FALSE) +
   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
-  geom_sf(data=gbr_shape_dhw |> 
-            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
-            #select(dhw_max_2024, reef_id) |> 
-            mutate(max_dhw=dhw_max_2016) |> 
-            rename(`max DHW \n` = "dhw_max_2016"), show.legend=FALSE,
-          aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
-  scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
-                       na.value="darkred",  labels=c("0","3","6","9",">12"))  +
-  ggtitle("2016")
+  geom_sf(aes(fill=max_dhw), shape=21, stroke=0.1, show.legend=FALSE) +
+  scale_fill_gradientn(
+    limits  = c(0,22),
+    name = "max DHW",
+    labels = c(0, 4, 8, 12, 16),
+    colours = dhw_scale[c(1, seq_along(dhw_scale), length(dhw_scale))],
+    values  = c(0, scales::rescale(dhw_colour_breaks, from = c(0,22)), 1),
+  ) + ggtitle("2016")
 
+plot2017 <- 
+gbr_shape_dhw |> 
+  mutate(max_dhw=dhw_max_2017) |> 
+  mutate(dhw_bins=cut(max_dhw, breaks=c(-0.01,4,8,12,16,20), 
+                      labels=c("0-4 DHW", "4-8 DHW", "8-12 DHW", "12-16 DHW", "16-20 DHW"))) |> 
+  rename(`max DHW \n` = "dhw_max_2024") |> 
 
-plot2017 <- ggplot() + theme_bw() +
+ggplot() + theme_bw() + #facet_wrap(~dhw_bins) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_sf(aes(fill=max_dhw), alpha=0, show.legend=FALSE) +
   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
-  geom_sf(data=gbr_shape_dhw |> 
-            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
-            #select(dhw_max_2024, reef_id) |> 
-            mutate(max_dhw=dhw_max_2017) |> 
-            rename(`max DHW \n` = "dhw_max_2017"), show.legend=FALSE,
-          aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
-  scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
-                       na.value="darkred",  labels=c("0","3","6","9",">12"))  +
-  ggtitle("2017")
+  geom_sf(aes(fill=max_dhw), shape=21, stroke=0.1, show.legend=FALSE) +
+  scale_fill_gradientn(
+    limits  = c(0,22),
+    name = "max DHW",
+    labels = c(0, 4, 8, 12, 16),
+    colours = dhw_scale[c(1, seq_along(dhw_scale), length(dhw_scale))],
+    values  = c(0, scales::rescale(dhw_colour_breaks, from = c(0,22)), 1),
+  ) + ggtitle("2017")
 
+plot2020 <- 
+gbr_shape_dhw |> 
+  mutate(max_dhw=dhw_max_2020) |> 
+  mutate(dhw_bins=cut(max_dhw, breaks=c(-0.01,4,8,12,16,20), 
+                      labels=c("0-4 DHW", "4-8 DHW", "8-12 DHW", "12-16 DHW", "16-20 DHW"))) |> 
+  rename(`max DHW \n` = "dhw_max_2024") |> 
 
-plot2020 <- ggplot() + theme_bw() +
+ggplot() + theme_bw() + #facet_wrap(~dhw_bins) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_sf(aes(fill=max_dhw), alpha=0, show.legend=FALSE) +
   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
-  geom_sf(data=gbr_shape_dhw |> 
-            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
-            #select(dhw_max_2024, reef_id) |> 
-            mutate(max_dhw=dhw_max_2020) |> 
-            rename(`max DHW \n` = "dhw_max_2020"), show.legend=FALSE,
-          aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
-  scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
-                       na.value="darkred",  labels=c("0","3","6","9",">12"))  +
-  ggtitle("2020")
+  geom_sf(aes(fill=max_dhw), shape=21, stroke=0.1, show.legend=FALSE) +
+  scale_fill_gradientn(
+    limits  = c(0,22),
+    name = "max DHW",
+    labels = c(0, 4, 8, 12, 16),
+    colours = dhw_scale[c(1, seq_along(dhw_scale), length(dhw_scale))],
+    values  = c(0, scales::rescale(dhw_colour_breaks, from = c(0,22)), 1),
+  ) + ggtitle("2020")
 
+plot2022 <- 
+gbr_shape_dhw |> 
+  mutate(max_dhw=dhw_max_2022) |> 
+  mutate(dhw_bins=cut(max_dhw, breaks=c(-0.01,4,8,12,16,20), 
+                      labels=c("0-4 DHW", "4-8 DHW", "8-12 DHW", "12-16 DHW", "16-20 DHW"))) |> 
+  rename(`max DHW \n` = "dhw_max_2024") |> 
 
-plot2022 <- ggplot() + theme_bw() +
+ggplot() + theme_bw() + #facet_wrap(~dhw_bins) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_sf(aes(fill=max_dhw), alpha=0, show.legend=FALSE) +
   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
-  geom_sf(data=gbr_shape_dhw |> 
-            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
-            #select(dhw_max_2024, reef_id) |> 
-            mutate(max_dhw=dhw_max_2022) |> 
-            rename(`max DHW \n` = "dhw_max_2022"), show.legend=FALSE,
-          aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
-  scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
-                       na.value="darkred",  labels=c("0","3","6","9",">12"))  +
-  ggtitle("2022")
+  geom_sf(aes(fill=max_dhw), shape=21, stroke=0.1, show.legend=FALSE) +
+  scale_fill_gradientn(
+    limits  = c(0,22),
+    name = "max DHW",
+    labels = c(0, 4, 8, 12, 16),
+    colours = dhw_scale[c(1, seq_along(dhw_scale), length(dhw_scale))],
+    values  = c(0, scales::rescale(dhw_colour_breaks, from = c(0,22)), 1),
+  ) + ggtitle("2022")
 
-plot2024 <- ggplot() + theme_bw() +
+plot2024 <- 
+gbr_shape_dhw |> 
+  mutate(max_dhw=dhw_max_2024) |> 
+  mutate(dhw_bins=cut(max_dhw, breaks=c(-0.01,4,8,12,16,20), 
+                      labels=c("0-4 DHW", "4-8 DHW", "8-12 DHW", "12-16 DHW", "16-20 DHW"))) |> 
+  rename(`max DHW \n` = "dhw_max_2024") |> 
+
+ggplot() + theme_bw() + #facet_wrap(~dhw_bins) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_sf(aes(fill=max_dhw), alpha=0, show.legend=FALSE) +
   geom_sf(data=ausmap, fill="olivedrab4", alpha=0.2) +
-  geom_sf(data=gbr_shape_dhw |> 
-            #mutate(dhw_max_2024=ifelse(dhw_max_2024 >12, 12, dhw_max_2024)) |> 
-            #select(dhw_max_2024, reef_id) |> 
-            mutate(max_dhw=dhw_max_2024) |> 
-            rename(`max DHW \n` = "dhw_max_2024"), show.legend=FALSE,
-          aes(fill=max_dhw, text=reef_id), shape=21, stroke=0.1) +
-  scale_fill_distiller(palette="RdYlBu", limits=c(0,12), 
-                       na.value="darkred",  labels=c("0","3","6","9",">12"))  +
-  ggtitle("2024")
+  geom_sf(aes(fill=max_dhw), shape=21, stroke=0.1, show.legend=FALSE) +
+  scale_fill_gradientn(
+    limits  = c(0,22),
+    name = "max DHW",
+    labels = c(0, 4, 8, 12, 16),
+    colours = dhw_scale[c(1, seq_along(dhw_scale), length(dhw_scale))],
+    values  = c(0, scales::rescale(dhw_colour_breaks, from = c(0,22)), 1),
+  ) + ggtitle("2024")
 
 plot20XX <- ggplot() + theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -207,10 +384,6 @@ plot20XX <- ggplot() + theme_bw() +
         axis.title.y = element_blank(),
         axis.text.x = element_blank(),
         axis.text.y = element_blank())
-
-# (plot1998|plot2002)/
-# (plot2016|plot2017|plot2020)/
-# (plot2022|plot2024|plot20XX)
 
 
 (plot1998|plot2002|plot2016|plot2017)/
