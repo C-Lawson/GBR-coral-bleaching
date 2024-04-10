@@ -13,3 +13,12 @@ plotly
 patchwork
 tmap
 rmarkdown
+httr
+cowplot
+janitor
+abind
+stars
+sp
+raster
+terra
+tidyterra

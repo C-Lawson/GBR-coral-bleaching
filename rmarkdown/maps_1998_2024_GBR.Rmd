@@ -16,13 +16,25 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-Synchronised spatial maps of the 1998, 2002, 2016, 2017, 2020, 2022, 2024 mass coral bleaching events (click on individual reefs for `reef_name` / `label_ID`):
+Synchronised spatial maps of the 1998, 2002, 2016, 2017, 2020, 2022, 2024 mass coral bleaching events (click on individual reefs for `reef_name` / `label_ID`). Note that the GBR shp file was downsampled using `st_simplify` to reduce file sizes and leads to a coarser resolution map appearance:
 
 
 ```{r, message=FALSE, warning=FALSE, fig.width=11, fig.height=9}
+library(sf)
+library(tidyverse)
+
+library(sf)
+library(ggplot2)
+library(tidyverse)
+library(plotly)
+library(patchwork)
+library(tmap)
+
+
+gbr_shape_dhw <- readRDS("/Users/rof011/GBR-coral-bleaching/data/gbr_shape_dhw.RDS")
+
 gbr_shape_dhw_simple <- gbr_shape_dhw |> 
   st_simplify(preserveTopology = FALSE, dTolerance = 10)
-
 
 #   DHWcolors <- c("#d2f8f9", "#433374", "#615192", "#7f6faf", "#9d8dcd", "#ffff54",
 # "#f9dd4a", "#f4bc41", "#f19b38", "#ea3323", "#c0281b", "#921c12",
@@ -36,6 +48,10 @@ gbr_shape_dhw_simple_long <- gbr_shape_dhw_simple %>%
   mutate(dhw_max = round(dhw_max, 1))
 
 
+map_outputs <- gbr_shape_dhw_simple_long |> dplyr::filter(year %in% c("1998","2002","2012",
+                                                    "2016","2017","2020",
+                                                    "2022","2024"))
+
 dhw_scale=c("#a5d3e5", "#eddf8c", "#ff9a15", "#820000")
 breaks <- c(0, 4, 8, 12, 16, 20) # Modify this based on your needs
 labels <- c("0", "4", "8", "12", "16", "20") # Modify labels accordingly
@@ -44,9 +60,7 @@ labels <- c("0", "4", "8", "12", "16", "20") # Modify labels accordingly
 tmap_mode("view")
 
 #tm_basemap("Esri.WorldImagery") +
-  tm_shape(gbr_shape_dhw_simple_long |> dplyr::filter(year %in% c("1998","2002","2012",
-                                                    "2016","2017","2020",
-                                                    "2022","2024"))) +
+  tm_shape(map_outputs) +
     tm_polygons(col="dhw_max",  
               title="max DHW", 
               palette = dhw_scale,
